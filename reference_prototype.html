@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>온맘마켓 — 공구 플로우 프로토타입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+:root {
+  --primary: #1A6840;
+  --primary-light: #EAF7F0;
+  --accent: #FF5C38;
+  --accent-light: #FFF1EE;
+  --kakao: #FEE500;
+  --kakao-dark: #3C1E1E;
+  --dark: #111827;
+  --gray-700: #374151;
+  --gray-500: #6B7280;
+  --gray-400: #9CA3AF;
+  --gray-300: #D1D5DB;
+  --gray-200: #E5E7EB;
+  --gray-100: #F3F4F6;
+  --gray-50: #F9FAFB;
+  --white: #FFFFFF;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  background: linear-gradient(180deg, #f0f2f5 0%, #e8eaed 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+button { font-family: inherit; cursor: pointer; border: none; }
+input, textarea { font-family: inherit; }
+
+/* 프로토타입 래퍼 */
+.proto-container {
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+}
+
+/* 폰 프레임 */
+.phone-frame {
+  width: 375px;
+  height: 812px;
+  background: var(--white);
+  border-radius: 50px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 
+    0 0 0 10px #1c1c1e,
+    0 0 0 12px #3a3a3c,
+    0 50px 100px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+.phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 34px;
+  background: #1c1c1e;
+  border-radius: 0 0 20px 20px;
+  z-index: 100;
+}
+.phone-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-50);
+}
+
+/* 상태바 */
+.status-bar {
+  height: 44px;
+  padding: 0 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+  background: var(--white);
+}
+
+/* 스크롤 영역 */
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.screen-content::-webkit-scrollbar { display: none; }
+
+/* 바텀 네비게이션 */
+.bottom-nav {
+  height: 84px;
+  background: var(--white);
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  padding: 8px 16px 28px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+.nav-item:active { background: var(--gray-100); }
+.nav-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border-radius: 8px;
+}
+.nav-item.active .nav-icon { background: var(--primary-light); }
+.nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-400);
+}
+.nav-item.active .nav-label { color: var(--primary); font-weight: 700; }
+.nav-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 공구 피드 카드 */
+.gonggu-card {
+  background: var(--white);
+  margin: 12px 16px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.gonggu-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.gonggu-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), #2A9E5F);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.gonggu-market-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dark);
+}
+.gonggu-market-sub {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+.gonggu-status {
+  margin-left: auto;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.status-upcoming { background: #DBEAFE; color: #1D4ED8; }
+.status-open { background: #D1FAE5; color: #065F46; }
+.status-closing { background: #FEE2E2; color: #DC2626; }
+.status-arrived { background: var(--kakao); color: var(--kakao-dark); }
+.status-done { background: var(--gray-200); color: var(--gray-500); }
+
+/* 공구 이미지 영역 */
+.gonggu-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #FFF8E7, #FFF1D6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.gonggu-image-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--accent);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.gonggu-image-emoji {
+  font-size: 80px;
+  margin-bottom: 12px;
+}
+.gonggu-image-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--dark);
+  text-align: center;
+  padding: 0 20px;
+}
+.gonggu-image-desc {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* 공구 정보 영역 */
+.gonggu-info {
+  padding: 16px;
+}
+.gonggu-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.gonggu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.gonggu-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--gray-100);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.gonggu-tag.highlight {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.gonggu-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.gonggu-price {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--accent);
+}
+.gonggu-price-orig {
+  font-size: 14px;
+  color: var(--gray-400);
+  text-decoration: line-through;
+}
+.gonggu-discount {
+  padding: 3px 8px;
+  background: var(--accent);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* 예약 현황 바 */
+.gonggu-progress {
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.gonggu-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.gonggu-progress-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dark);
+}
+.gonggu-progress-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.gonggu-progress-bar {
+  height: 8px;
+  background: var(--gray-300);
+  border-radius: 50px;
+  overflow: hidden;
+}
+.gonggu-progress-fill {
+  height: 100%;
+  border-radius: 50px;
+  transition: width 0.5s ease;
+}
+
+/* 버튼 */
+.btn-primary {
+  width: 100%;
+  padding: 16px;
+  background: var(--primary);
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+.btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+.btn-primary:disabled {
+  background: var(--gray-300);
+  color: var(--gray-500);
+  cursor: not-allowed;
+}
+.btn-outline {
+  width: 100%;
+  padding: 14px;
+  background: white;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+}
+.btn-kakao {
+  width: 100%;
+  padding: 16px;
+  background: var(--kakao);
+  color: var(--kakao-dark);
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 예약 모달 / 바텀시트 */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.bottom-sheet {
+  background: white;
+  border-radius: 24px 24px 0 0;
+  padding: 20px;
+  animation: slideUp 0.3s ease;
+  max-height: 85%;
+  overflow-y: auto;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--gray-300);
+  border-radius: 50px;
+  margin: 0 auto 16px;
+}
+.sheet-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+.sheet-subtitle {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-bottom: 20px;
+}
+
+/* 수량 선택 */
+.qty-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 20px;
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+.qty-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qty-btn:disabled {
+  background: var(--gray-300);
+  color: var(--gray-500);
+}
+.qty-value {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--dark);
+  min-width: 60px;
+  text-align: center;
+}
+
+/* 내 예약 카드 */
+.my-resv-card {
+  background: white;
+  margin: 12px 16px;
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.my-resv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.my-resv-id {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-400);
+}
+.my-resv-status {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.my-resv-product {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.my-resv-emoji {
+  width: 50px;
+  height: 50px;
+  background: var(--gray-100);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+.my-resv-info h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+.my-resv-info p {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.my-resv-price {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+/* QR 영역 */
+.qr-box {
+  background: var(--gray-50);
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  margin-top: 12px;
+}
+.qr-code {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 12px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qr-number {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+.qr-hint {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-top: 8px;
+}
+
+/* 가이드 패널 */
+.guide-panel {
+  width: 340px;
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.guide-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.guide-step {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.guide-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.guide-text h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+.guide-text p {
+  font-size: 12px;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+.guide-note {
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-size: 12px;
+  color: var(--gray-700);
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+/* 애니메이션 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.pulse { animation: pulse 1.5s infinite; }
+
+/* 토스트 */
+.toast {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dark);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 300;
+  animation: toastIn 0.3s ease;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* 헤더 */
+.screen-header {
+  background: white;
+  padding: 0 16px 16px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.screen-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--dark);
+}
+.screen-subtitle {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+/* 필터 탭 */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  background: white;
+}
+.filter-tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  transition: all 0.2s;
+}
+.filter-tab.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* 입고 알림 배너 */
+.arrival-banner {
+  margin: 12px 16px;
+  background: linear-gradient(135deg, var(--kakao), #FFD43B);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.arrival-banner-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--kakao-dark);
+  margin-bottom: 8px;
+}
+.arrival-banner-list {
+  font-size: 13px;
+  color: var(--kakao-dark);
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ══════════════════════════════════════════════════════════════
+   더미 데이터 — 실제 공구 플로우 기반
+   ══════════════════════════════════════════════════════════════ */
+
+const MARKETS = [
+  { id: 1, name: "온맘마켓 일산점", emoji: "🥬", area: "일산동구", followers: 142 },
+  { id: 2, name: "소도몰 인하대역점", emoji: "🛒", area: "인천 미추홀구", followers: 89 },
+];
+
+// 공구 목록 (입고 예정일 기반)
+const GONGGU_LIST = [
+  {
+    id: 1,
+    marketId: 1,
+    title: "유기농 레몬즙 스틱 14포",
+    emoji: "🍋",
+    description: "100% 스페인산 유기농 · NFC 착즙 공법",
+    category: "건강식품",
+    originalPrice: 18000,
+    price: 9900,
+    arrivalDate: "3/11",
+    pickupDate: "3/11~3/13",
+    status: "open",
+    reserved: 28,
+    total: 50,
+    tags: ["유기농", "HACCP"],
+    imageColor: "#FFF8E1",
+  },
+  {
+    id: 2,
+    marketId: 1,
+    title: "애플청포도 (신선)",
+    emoji: "🍇",
+    description: "단단, 아삭, 달콤한 청포도",
+    category: "과일",
+    originalPrice: 12000,
+    price: 6900,
+    arrivalDate: "3/11",
+    pickupDate: "3/11~3/12",
+    status: "arrived",
+    reserved: 33,
+    total: 40,
+    tags: ["신선", "국내산"],
+    imageColor: "#F0FDF4",
+  },
+  {
+    id: 3,
+    marketId: 2,
+    title: "노트북 파우치 15인치",
+    emoji: "💼",
+    description: "방수 소재 · 13~15인치 호환",
+    category: "생활용품",
+    originalPrice: 5900,
+    price: 1990,
+    arrivalDate: "3/11",
+    pickupDate: "3/11",
+    status: "arrived",
+    reserved: 15,
+    total: 30,
+    tags: ["초특가"],
+    imageColor: "#EFF6FF",
+  },
+  {
+    id: 4,
+    marketId: 2,
+    title: "참기름 300ml",
+    emoji: "🫒",
+    description: "국내산 참깨 100% · 저온압착",
+    category: "식품",
+    originalPrice: 15000,
+    price: 8900,
+    arrivalDate: "3/12",
+    pickupDate: "3/12~3/13",
+    status: "open",
+    reserved: 22,
+    total: 50,
+    tags: ["국내산"],
+    imageColor: "#FEF3C7",
+  },
+  {
+    id: 5,
+    marketId: 1,
+    title: "다빔다이어트쾌변",
+    emoji: "🌿",
+    description: "식이섬유 · 프로바이오틱스 함유",
+    category: "건강식품",
+    originalPrice: 15000,
+    price: 7900,
+    arrivalDate: "3/11",
+    pickupDate: "3/11",
+    status: "closing",
+    reserved: 47,
+    total: 50,
+    tags: ["마감임박"],
+    imageColor: "#ECFDF5",
+  },
+  {
+    id: 6,
+    marketId: 1,
+    title: "들기름 300ml",
+    emoji: "🥜",
+    description: "국내산 들깨 100%",
+    category: "식품",
+    originalPrice: 16000,
+    price: 8900,
+    arrivalDate: "3/12",
+    pickupDate: "3/12~3/13",
+    status: "open",
+    reserved: 18,
+    total: 40,
+    tags: ["국내산"],
+    imageColor: "#FEF3C7",
+  },
+  {
+    id: 7,
+    marketId: 2,
+    title: "크림볼 12개입",
+    emoji: "🧁",
+    description: "수제 크림볼 · 냉동배송",
+    category: "베이커리",
+    originalPrice: 8000,
+    price: 3390,
+    arrivalDate: "3/14",
+    pickupDate: "3/14",
+    status: "upcoming",
+    reserved: 8,
+    total: 50,
+    tags: ["수제", "냉동"],
+    imageColor: "#FDF2F8",
+  },
+  {
+    id: 8,
+    marketId: 1,
+    title: "제주 감귤 3kg",
+    emoji: "🍊",
+    description: "제주 노지 감귤 · 당도선별",
+    category: "과일",
+    originalPrice: 18000,
+    price: 9900,
+    arrivalDate: "3/13",
+    pickupDate: "3/13~3/14",
+    status: "open",
+    reserved: 35,
+    total: 60,
+    tags: ["제주산", "당도보장"],
+    imageColor: "#FFF7ED",
+  },
+  {
+    id: 9,
+    marketId: 2,
+    title: "국산 콩나물 1kg",
+    emoji: "🌱",
+    description: "무농약 국산 콩나물",
+    category: "식품",
+    originalPrice: 5000,
+    price: 2500,
+    arrivalDate: "3/15",
+    pickupDate: "3/15",
+    status: "upcoming",
+    reserved: 12,
+    total: 80,
+    tags: ["국내산"],
+    imageColor: "#F0FDF4",
+  },
+  {
+    id: 10,
+    marketId: 1,
+    title: "수제 쿠키 세트",
+    emoji: "🍪",
+    description: "버터쿠키 5종 세트",
+    category: "베이커리",
+    originalPrice: 12000,
+    price: 6900,
+    arrivalDate: "3/16",
+    pickupDate: "3/16~3/17",
+    status: "upcoming",
+    reserved: 5,
+    total: 30,
+    tags: ["수제"],
+    imageColor: "#FEF3C7",
+  },
+  {
+    id: 11,
+    marketId: 2,
+    title: "한우 불고기 500g",
+    emoji: "🥩",
+    description: "1++ 한우 불고기용",
+    category: "정육",
+    originalPrice: 35000,
+    price: 24900,
+    arrivalDate: "3/17",
+    pickupDate: "3/17",
+    status: "upcoming",
+    reserved: 18,
+    total: 25,
+    tags: ["한우", "1++"],
+    imageColor: "#FEE2E2",
+  },
+];
+
+// 내 예약 목록
+const INITIAL_MY_RESERVATIONS = [
+  {
+    id: "R-1001",
+    gongguId: 2,
+    title: "애플청포도 (신선)",
+    emoji: "🍇",
+    marketName: "온맘마켓 일산점",
+    qty: 2,
+    price: 13800,
+    status: "입고완료", // 예약완료, 입고완료, 픽업완료, 취소
+    reservedAt: "4/5(토) 오후 3:22",
+    pickupDate: "4/7(월)~4/9(수)",
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   컴포넌트
+   ══════════════════════════════════════════════════════════════ */
+
+// 상태 뱃지 컴포넌트
+function StatusBadge({ status }) {
+  const config = {
+    upcoming: { label: "입고예정", className: "status-upcoming" },
+    open: { label: "예약중", className: "status-open" },
+    closing: { label: "마감임박", className: "status-closing" },
+    arrived: { label: "입고완료", className: "status-arrived" },
+    done: { label: "마감", className: "status-done" },
+  };
+  const { label, className } = config[status] || config.done;
+  return <span className={`gonggu-status ${className}`}>{label}</span>;
+}
+
+// 공구 카드 컴포넌트 (리스트형)
+function GongguCard({ gonggu, market, onReserve }) {
+  const percent = Math.round((gonggu.reserved / gonggu.total) * 100);
+  const remaining = gonggu.total - gonggu.reserved;
+  const discount = Math.round((1 - gonggu.price / gonggu.originalPrice) * 100);
+  
+  const progressColor = percent >= 90 
+    ? "#DC2626"
+    : percent >= 70 
+    ? "#F59E0B"
+    : "#059669";
+
+  return (
+    <div className="gonggu-card" style={{ padding: 16 }}>
+      {/* 상단: 마켓 + 상태 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16 }}>{market.emoji}</span>
+          <span style={{ fontSize: 12, color: "var(--gray-500)", fontWeight: 600 }}>{market.name}</span>
+        </div>
+        <StatusBadge status={gonggu.status} />
+      </div>
+      
+      {/* 메인: 이미지 + 정보 */}
+      <div style={{ display: "flex", gap: 14 }}>
+        {/* 작은 이미지 */}
+        <div style={{ 
+          width: 72, 
+          height: 72, 
+          background: gonggu.imageColor,
+          borderRadius: 14,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 36,
+          flexShrink: 0
+        }}>
+          {gonggu.emoji}
+        </div>
+        
+        {/* 정보 */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", marginBottom: 4, lineHeight: 1.3 }}>
+            {gonggu.title}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--gray-500)", marginBottom: 6 }}>
+            {gonggu.category} · 픽업 {gonggu.pickupDate}
+          </div>
+          
+          {/* 가격 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 16, fontWeight: 900, color: "var(--accent)" }}>
+              ₩{gonggu.price.toLocaleString()}
+            </span>
+            <span style={{ fontSize: 12, color: "var(--gray-400)", textDecoration: "line-through" }}>
+              ₩{gonggu.originalPrice.toLocaleString()}
+            </span>
+            <span style={{ 
+              fontSize: 11, 
+              fontWeight: 800, 
+              color: "var(--accent)",
+              background: "var(--accent-light)",
+              padding: "2px 6px",
+              borderRadius: 4
+            }}>
+              -{discount}%
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      {/* 하단: 예약 현황 + 버튼 */}
+      <div style={{ marginTop: 12 }}>
+        {/* 프로그레스 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <span style={{ fontSize: 11, color: "var(--gray-500)" }}>
+            👥 {gonggu.reserved}명 예약
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: remaining <= 10 ? "var(--accent)" : "var(--gray-500)" }}>
+            잔여 {remaining}개
+          </span>
+        </div>
+        <div style={{ height: 6, background: "var(--gray-200)", borderRadius: 50, overflow: "hidden", marginBottom: 12 }}>
+          <div style={{ height: "100%", width: `${percent}%`, background: progressColor, borderRadius: 50 }} />
+        </div>
+        
+        {/* 버튼 */}
+        {(gonggu.status === "open" || gonggu.status === "closing") && (
+          <button className="btn-primary" style={{ padding: 12, fontSize: 14 }} onClick={() => onReserve(gonggu)}>
+            예약하기
+          </button>
+        )}
+        {gonggu.status === "arrived" && (
+          <button className="btn-kakao" style={{ padding: 12, fontSize: 14 }}>
+            📦 입고완료 — 픽업하러 가기
+          </button>
+        )}
+        {gonggu.status === "upcoming" && (
+          <button className="btn-outline" style={{ padding: 12, fontSize: 13 }}>
+            🔔 입고 알림 받기
+          </button>
+        )}
+        {gonggu.status === "done" && (
+          <button className="btn-primary" style={{ padding: 12, fontSize: 14 }} disabled>
+            마감
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 예약 바텀시트
+function ReserveSheet({ gonggu, market, onClose, onConfirm }) {
+  const [qty, setQty] = useState(1);
+  const remaining = gonggu.total - gonggu.reserved;
+  const total = gonggu.price * qty;
+  
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title">예약하기</div>
+        <div className="sheet-subtitle">{market.name} · {gonggu.title}</div>
+        
+        {/* 상품 요약 */}
+        <div style={{ 
+          display: "flex", 
+          gap: 12, 
+          padding: 16, 
+          background: "var(--gray-50)", 
+          borderRadius: 12,
+          marginBottom: 16
+        }}>
+          <div style={{ 
+            width: 60, 
+            height: 60, 
+            background: gonggu.imageColor, 
+            borderRadius: 12,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 32
+          }}>
+            {gonggu.emoji}
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{gonggu.title}</div>
+            <div style={{ fontSize: 12, color: "var(--gray-500)", marginBottom: 4 }}>픽업 {gonggu.pickupDate}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--accent)" }}>
+              ₩{gonggu.price.toLocaleString()}
+            </div>
+          </div>
+        </div>
+        
+        {/* 수량 선택 */}
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>수량 선택</div>
+        <div className="qty-selector">
+          <button 
+            className="qty-btn" 
+            onClick={() => setQty(Math.max(1, qty - 1))}
+            disabled={qty <= 1}
+          >
+            −
+          </button>
+          <div className="qty-value">{qty}</div>
+          <button 
+            className="qty-btn" 
+            onClick={() => setQty(Math.min(remaining, qty + 1))}
+            disabled={qty >= remaining}
+          >
+            +
+          </button>
+        </div>
+        
+        {/* 안내 */}
+        <div style={{ 
+          background: "#FFF8EC", 
+          border: "1px solid #FFE5A8",
+          borderRadius: 12, 
+          padding: 14,
+          marginBottom: 16
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#D97706", marginBottom: 6 }}>
+            📋 예약 안내
+          </div>
+          <div style={{ fontSize: 11, color: "var(--gray-700)", lineHeight: 1.6 }}>
+            · 입고 완료 시 앱 알림 발송<br/>
+            · 현장 방문 후 결제 (카드·현금)<br/>
+            · 픽업 기간 내 미방문 시 자동 취소
+          </div>
+        </div>
+        
+        {/* 합계 */}
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          marginBottom: 12
+        }}>
+          <span style={{ fontSize: 14, color: "var(--gray-500)" }}>예상 결제금액</span>
+          <span style={{ fontSize: 22, fontWeight: 900, color: "var(--accent)" }}>
+            ₩{total.toLocaleString()}
+          </span>
+        </div>
+        
+        {/* 버튼 */}
+        <button className="btn-primary" onClick={() => onConfirm(gonggu, qty)}>
+          예약 확정하기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 예약 완료 바텀시트
+function ReserveCompleteSheet({ reservation, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
+          <div className="sheet-title" style={{ marginBottom: 4 }}>예약 완료!</div>
+          <div className="sheet-subtitle" style={{ marginBottom: 0 }}>
+            입고 완료 시 알림을 보내드릴게요
+          </div>
+        </div>
+        
+        {/* 예약 정보 */}
+        <div style={{ 
+          background: "var(--gray-50)", 
+          borderRadius: 12, 
+          padding: 16,
+          marginBottom: 16
+        }}>
+          <div style={{ fontSize: 12, color: "var(--gray-400)", marginBottom: 8 }}>예약번호</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: "var(--primary)", letterSpacing: 2 }}>
+            {reservation.id}
+          </div>
+        </div>
+        
+        <div style={{ 
+          display: "flex", 
+          gap: 12, 
+          marginBottom: 16,
+          padding: 14,
+          background: "white",
+          border: "1px solid var(--gray-200)",
+          borderRadius: 12
+        }}>
+          <div style={{ 
+            width: 50, 
+            height: 50, 
+            background: "var(--gray-100)", 
+            borderRadius: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 26
+          }}>
+            {reservation.emoji}
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{reservation.title}</div>
+            <div style={{ fontSize: 12, color: "var(--gray-500)" }}>{reservation.marketName}</div>
+            <div style={{ fontSize: 12, color: "var(--gray-500)" }}>수량 {reservation.qty}개</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--accent)", marginTop: 4 }}>
+              ₩{reservation.price.toLocaleString()}
+            </div>
+          </div>
+        </div>
+        
+        <div style={{ 
+          background: "#EAF7F0", 
+          borderRadius: 12, 
+          padding: 14,
+          marginBottom: 20,
+          fontSize: 12,
+          color: "#065F46",
+          lineHeight: 1.6,
+          textAlign: "center"
+        }}>
+          📅 픽업 기간: <strong>{reservation.pickupDate}</strong><br/>
+          입고 완료 시 푸시 알림을 보내드려요
+        </div>
+        
+        <button className="btn-primary" onClick={onClose}>
+          확인
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 내 예약 카드
+function MyReservationCard({ reservation }) {
+  const statusConfig = {
+    "예약완료": { bg: "#DBEAFE", color: "#1D4ED8" },
+    "입고완료": { bg: "#FEE500", color: "#3C1E1E" },
+    "픽업완료": { bg: "#D1FAE5", color: "#065F46" },
+    "취소": { bg: "#FEE2E2", color: "#DC2626" },
+  };
+  const { bg, color } = statusConfig[reservation.status] || statusConfig["예약완료"];
+  
+  return (
+    <div className="my-resv-card">
+      <div className="my-resv-header">
+        <span className="my-resv-id">{reservation.id}</span>
+        <span className="my-resv-status" style={{ background: bg, color }}>{reservation.status}</span>
+      </div>
+      <div className="my-resv-product">
+        <div className="my-resv-emoji">{reservation.emoji}</div>
+        <div className="my-resv-info">
+          <h4>{reservation.title}</h4>
+          <p>{reservation.marketName} · 수량 {reservation.qty}개</p>
+          <div className="my-resv-price">₩{reservation.price.toLocaleString()}</div>
+        </div>
+      </div>
+      
+      {reservation.status === "입고완료" && (
+        <div className="qr-box">
+          <div className="qr-code">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              {[0,1,2,3,4].map(r => [0,1,2,3,4].map(c => {
+                const v = ((r*5+c)*7)%3 === 0;
+                if (!v) return null;
+                return <rect key={`${r}-${c}`} x={4+c*14} y={4+r*14} width={12} height={12} rx={2} fill="#1A6840"/>;
+              }))}
+            </svg>
+          </div>
+          <div className="qr-number">{reservation.id}</div>
+          <div className="qr-hint">픽업 시 직원에게 보여주세요</div>
+        </div>
+      )}
+      
+      {reservation.status === "예약완료" && (
+        <div style={{ 
+          background: "var(--gray-50)", 
+          borderRadius: 10, 
+          padding: 12,
+          fontSize: 12,
+          color: "var(--gray-600)",
+          textAlign: "center"
+        }}>
+          ⏳ 입고 대기 중 · 입고 시 알림 발송 예정
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 공구 피드 화면
+function FeedScreen({ onReserve }) {
+  const [dateFilter, setDateFilter] = useState("전체");
+  const [categoryFilter, setCategoryFilter] = useState("전체");
+  
+  // 7일치 날짜 생성 (3/11 ~ 3/17)
+  const dateFilters = ["전체", "3/11", "3/12", "3/13", "3/14", "3/15", "3/16", "3/17"];
+  const categories = ["전체", "과일", "식품", "건강식품", "생활용품", "베이커리", "정육"];
+  
+  const filteredList = GONGGU_LIST.filter(g => {
+    // 날짜 필터
+    let dateMatch = dateFilter === "전체" || g.arrivalDate === dateFilter;
+    
+    // 카테고리 필터
+    let categoryMatch = categoryFilter === "전체" || g.category === categoryFilter;
+    
+    return dateMatch && categoryMatch;
+  });
+  
+  // 오늘(3/11) 입고 완료 상품 수
+  const todayArrivedCount = GONGGU_LIST.filter(g => g.arrivalDate === "3/11" && g.status === "arrived").length;
+  
+  return (
+    <div>
+      <div className="status-bar" style={{ background: "white" }}>
+        <span style={{ fontWeight: 700 }}>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+      <div className="screen-header">
+        <div className="screen-title">공구</div>
+        <div className="screen-subtitle">
+          오늘(3/11) {GONGGU_LIST.filter(g => g.arrivalDate === "3/11").length}개 공구
+        </div>
+      </div>
+      
+      {/* 날짜 필터 */}
+      <div className="filter-tabs" style={{ borderBottom: "1px solid var(--gray-100)" }}>
+        {dateFilters.map(f => {
+          const count = f === "전체" ? GONGGU_LIST.length : GONGGU_LIST.filter(g => g.arrivalDate === f).length;
+          const isToday = f === "3/11";
+          return (
+            <button 
+              key={f}
+              className={`filter-tab ${dateFilter === f ? "active" : ""}`}
+              onClick={() => setDateFilter(f)}
+              style={{ position: "relative" }}
+            >
+              {f === "전체" ? "전체" : f.replace("3/", "")}
+              {isToday && dateFilter !== f && (
+                <span style={{ 
+                  position: "absolute",
+                  top: -2,
+                  right: -2,
+                  width: 6,
+                  height: 6,
+                  background: "var(--accent)",
+                  borderRadius: "50%"
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      
+      {/* 카테고리 필터 */}
+      <div className="filter-tabs" style={{ background: "var(--gray-50)", paddingTop: 8, paddingBottom: 8 }}>
+        {categories.map(c => (
+          <button 
+            key={c}
+            className={`filter-tab ${categoryFilter === c ? "active" : ""}`}
+            onClick={() => setCategoryFilter(c)}
+            style={{ 
+              padding: "6px 12px",
+              fontSize: 12,
+              background: categoryFilter === c ? "var(--dark)" : "white",
+              color: categoryFilter === c ? "white" : "var(--gray-600)",
+              border: categoryFilter === c ? "none" : "1px solid var(--gray-200)"
+            }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+      
+      {/* 오늘 입고 완료 배너 */}
+      {dateFilter === "전체" && todayArrivedCount > 0 && (
+        <div className="arrival-banner">
+          <div className="arrival-banner-title">📦 오늘(3/11) 입고 완료</div>
+          <div className="arrival-banner-list">
+            {GONGGU_LIST.filter(g => g.status === "arrived").map(item => (
+              <div key={item.id}>{item.emoji} {item.title} — ₩{item.price.toLocaleString()}</div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* 결과 카운트 */}
+      {filteredList.length > 0 && (
+        <div style={{ padding: "12px 16px 0", fontSize: 12, color: "var(--gray-500)" }}>
+          {filteredList.length}개 상품
+        </div>
+      )}
+      
+      {/* 결과 없음 */}
+      {filteredList.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--gray-400)" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>해당 조건의 공구가 없어요</div>
+          <div style={{ fontSize: 12, marginTop: 4 }}>다른 날짜나 카테고리를 선택해보세요</div>
+        </div>
+      )}
+      
+      {/* 공구 목록 */}
+      {filteredList.map(gonggu => {
+        const market = MARKETS.find(m => m.id === gonggu.marketId);
+        return (
+          <GongguCard 
+            key={gonggu.id} 
+            gonggu={gonggu} 
+            market={market}
+            onReserve={onReserve}
+          />
+        );
+      })}
+      
+      <div style={{ height: 20 }} />
+    </div>
+  );
+}
+
+// 지도 화면
+function MapScreen() {
+  const [selectedMarket, setSelectedMarket] = useState(null);
+  
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div className="status-bar" style={{ background: "white" }}>
+        <span style={{ fontWeight: 700 }}>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+      
+      {/* 지도 영역 */}
+      <div style={{ 
+        flex: 1, 
+        background: "linear-gradient(180deg, #d4edda 0%, #c8e6d0 50%, #b8dcc0 100%)",
+        position: "relative",
+        overflow: "hidden"
+      }}>
+        {/* 그리드 */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)",
+          backgroundSize: "30px 30px"
+        }} />
+        
+        {/* 도로 */}
+        <div style={{ position: "absolute", top: "45%", left: 0, right: 0, height: 12, background: "rgba(255,255,255,.7)" }} />
+        <div style={{ position: "absolute", left: "40%", top: 0, bottom: 0, width: 10, background: "rgba(255,255,255,.7)" }} />
+        
+        {/* 내 위치 */}
+        <div style={{ 
+          position: "absolute", 
+          left: "50%", 
+          top: "50%", 
+          transform: "translate(-50%, -50%)"
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            background: "rgba(29, 78, 216, 0.15)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <div style={{
+              width: 16,
+              height: 16,
+              borderRadius: "50%",
+              background: "#1D4ED8",
+              border: "3px solid white",
+              boxShadow: "0 2px 8px rgba(0,0,0,.2)"
+            }} />
+          </div>
+        </div>
+        
+        {/* 마켓 핀들 */}
+        {MARKETS.map((market, i) => {
+          const positions = [
+            { left: "25%", top: "30%" },
+            { left: "70%", top: "60%" },
+          ];
+          const pos = positions[i] || positions[0];
+          const isSelected = selectedMarket?.id === market.id;
+          
+          return (
+            <div 
+              key={market.id}
+              onClick={() => setSelectedMarket(market)}
+              style={{ 
+                position: "absolute",
+                ...pos,
+                transform: "translate(-50%, -100%)",
+                cursor: "pointer",
+                transition: "transform 0.2s",
+                zIndex: isSelected ? 10 : 1
+              }}
+            >
+              <div style={{
+                background: isSelected ? "var(--accent)" : "white",
+                color: isSelected ? "white" : "var(--dark)",
+                padding: "8px 12px",
+                borderRadius: 12,
+                boxShadow: "0 4px 12px rgba(0,0,0,.15)",
+                fontSize: 13,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                gap: 6
+              }}>
+                <span>{market.emoji}</span>
+                <span>{market.name.replace("온맘마켓 ", "").replace("소도몰 ", "")}</span>
+              </div>
+              <div style={{
+                width: 0,
+                height: 0,
+                borderLeft: "8px solid transparent",
+                borderRight: "8px solid transparent",
+                borderTop: `10px solid ${isSelected ? "var(--accent)" : "white"}`,
+                margin: "0 auto"
+              }} />
+            </div>
+          );
+        })}
+        
+        {/* 현재 위치 버튼 */}
+        <button style={{
+          position: "absolute",
+          bottom: 20,
+          right: 16,
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          background: "white",
+          border: "none",
+          boxShadow: "0 2px 12px rgba(0,0,0,.15)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 20
+        }}>
+          📍
+        </button>
+      </div>
+      
+      {/* 선택된 마켓 카드 */}
+      {selectedMarket && (
+        <div style={{
+          background: "white",
+          padding: 20,
+          borderTop: "1px solid var(--gray-200)"
+        }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 12 }}>
+            <div style={{
+              width: 50,
+              height: 50,
+              borderRadius: 14,
+              background: "linear-gradient(135deg, var(--primary), #2A9E5F)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 26
+            }}>
+              {selectedMarket.emoji}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{selectedMarket.name}</div>
+              <div style={{ fontSize: 12, color: "var(--gray-500)", marginTop: 2 }}>
+                {selectedMarket.area} · 구독자 {selectedMarket.followers}명
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={{
+              flex: 1,
+              padding: "12px",
+              background: "var(--gray-100)",
+              border: "none",
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "var(--gray-700)"
+            }}>
+              마켓 보기
+            </button>
+            <button style={{
+              flex: 1,
+              padding: "12px",
+              background: "var(--primary)",
+              border: "none",
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "white"
+            }}>
+              오늘 공구 {GONGGU_LIST.filter(g => g.marketId === selectedMarket.id && g.arrivalDateKey === "today").length}개
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* 하단 마켓 리스트 (선택 안됐을 때) */}
+      {!selectedMarket && (
+        <div style={{
+          background: "white",
+          padding: "16px",
+          borderTop: "1px solid var(--gray-200)"
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 12 }}>
+            내 주변 마켓
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            {MARKETS.map(market => (
+              <div 
+                key={market.id}
+                onClick={() => setSelectedMarket(market)}
+                style={{
+                  flex: 1,
+                  padding: "14px 12px",
+                  background: "var(--gray-50)",
+                  borderRadius: 12,
+                  textAlign: "center",
+                  cursor: "pointer"
+                }}
+              >
+                <div style={{ fontSize: 24, marginBottom: 6 }}>{market.emoji}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--dark)" }}>
+                  {market.name.replace("온맘마켓 ", "").replace("소도몰 ", "")}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--gray-500)", marginTop: 2 }}>
+                  오늘 {GONGGU_LIST.filter(g => g.marketId === market.id && g.arrivalDateKey === "today").length}개 공구
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 내 예약 화면
+function MyReservationsScreen({ reservations }) {
+  const active = reservations.filter(r => r.status !== "픽업완료" && r.status !== "취소");
+  const past = reservations.filter(r => r.status === "픽업완료" || r.status === "취소");
+  
+  return (
+    <div>
+      <div className="status-bar" style={{ background: "white" }}>
+        <span style={{ fontWeight: 700 }}>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+      <div className="screen-header">
+        <div className="screen-title">내 예약</div>
+        <div className="screen-subtitle">{reservations.length}건의 예약</div>
+      </div>
+      
+      {active.length > 0 && (
+        <>
+          <div style={{ padding: "16px 16px 8px", fontSize: 13, fontWeight: 700, color: "var(--gray-500)" }}>
+            진행 중 ({active.length})
+          </div>
+          {active.map(r => <MyReservationCard key={r.id} reservation={r} />)}
+        </>
+      )}
+      
+      {past.length > 0 && (
+        <>
+          <div style={{ padding: "16px 16px 8px", fontSize: 13, fontWeight: 700, color: "var(--gray-400)" }}>
+            완료 ({past.length})
+          </div>
+          {past.map(r => <MyReservationCard key={r.id} reservation={r} />)}
+        </>
+      )}
+      
+      {reservations.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--gray-400)" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>예약 내역이 없습니다</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 마이페이지 화면
+function MyPageScreen() {
+  return (
+    <div>
+      <div className="status-bar" style={{ background: "linear-gradient(135deg, #1A6840, #2A9E5F)" }}>
+        <span style={{ fontWeight: 700, color: "rgba(255,255,255,.8)" }}>9:41</span>
+        <span style={{ color: "rgba(255,255,255,.8)" }}>📶 🔋</span>
+      </div>
+      
+      {/* 프로필 헤더 */}
+      <div style={{ 
+        background: "linear-gradient(135deg, #1A6840, #2A9E5F)",
+        padding: "0 20px 28px"
+      }}>
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <div style={{ 
+            width: 60, 
+            height: 60, 
+            borderRadius: 50,
+            background: "rgba(255,255,255,.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 28
+          }}>
+            👩
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "white" }}>김지연 님</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)", marginTop: 4 }}>
+              일산동구 · 단골 회원 ⭐
+            </div>
+          </div>
+        </div>
+        
+        {/* 통계 */}
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(3, 1fr)", 
+          gap: 10,
+          marginTop: 20
+        }}>
+          {[
+            { label: "총 구매", value: "12회" },
+            { label: "총 절약", value: "₩87,400" },
+            { label: "노쇼", value: "0회" },
+          ].map((stat, i) => (
+            <div key={i} style={{ 
+              background: "rgba(255,255,255,.15)",
+              borderRadius: 12,
+              padding: "12px 8px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>{stat.value}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,.7)", marginTop: 2 }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* 메뉴 */}
+      <div style={{ padding: 16 }}>
+        {[
+          { emoji: "🏪", label: "구독 마켓", desc: "2곳 구독 중" },
+          { emoji: "🔔", label: "알림 설정", desc: "입고 알림 ON" },
+          { emoji: "📍", label: "내 동네 설정", desc: "일산동구 풍동" },
+          { emoji: "💬", label: "문의하기", desc: "카카오톡 상담" },
+        ].map((menu, i) => (
+          <div key={i} style={{ 
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "16px 0",
+            borderBottom: i < 3 ? "1px solid var(--gray-100)" : "none"
+          }}>
+            <span style={{ fontSize: 22 }}>{menu.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--dark)" }}>{menu.label}</div>
+              <div style={{ fontSize: 12, color: "var(--gray-500)" }}>{menu.desc}</div>
+            </div>
+            <span style={{ color: "var(--gray-300)" }}>›</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 메인 앱
+function ConsumerApp() {
+  const [tab, setTab] = useState("feed");
+  const [reservations, setReservations] = useState(INITIAL_MY_RESERVATIONS);
+  const [selectedGonggu, setSelectedGonggu] = useState(null);
+  const [completeReservation, setCompleteReservation] = useState(null);
+  const [toast, setToast] = useState(null);
+  
+  const handleReserve = (gonggu) => {
+    setSelectedGonggu(gonggu);
+  };
+  
+  const handleConfirmReserve = (gonggu, qty) => {
+    const market = MARKETS.find(m => m.id === gonggu.marketId);
+    const newReservation = {
+      id: `R-${1002 + reservations.length}`,
+      gongguId: gonggu.id,
+      title: gonggu.title,
+      emoji: gonggu.emoji,
+      marketName: market.name,
+      qty,
+      price: gonggu.price * qty,
+      status: "예약완료",
+      reservedAt: "방금 전",
+      pickupDate: gonggu.pickupDate,
+    };
+    
+    setReservations(prev => [newReservation, ...prev]);
+    setSelectedGonggu(null);
+    setCompleteReservation(newReservation);
+  };
+  
+  const unreadCount = reservations.filter(r => r.status === "입고완료").length;
+  
+  const renderScreen = () => {
+    switch (tab) {
+      case "feed":
+        return <FeedScreen onReserve={handleReserve} />;
+      case "map":
+        return <MapScreen />;
+      case "reservations":
+        return <MyReservationsScreen reservations={reservations} />;
+      case "mypage":
+        return <MyPageScreen />;
+      default:
+        return <FeedScreen onReserve={handleReserve} />;
+    }
+  };
+  
+  return (
+    <div className="phone-inner">
+      <div className="screen-content">
+        {renderScreen()}
+      </div>
+      
+      {/* 바텀 네비게이션 */}
+      <div className="bottom-nav">
+        {[
+          { key: "feed", icon: "📣", label: "공구" },
+          { key: "map", icon: "🗺️", label: "지도" },
+          { key: "reservations", icon: "📋", label: "내 예약", badge: unreadCount },
+          { key: "mypage", icon: "👤", label: "MY" },
+        ].map(item => (
+          <button 
+            key={item.key}
+            className={`nav-item ${tab === item.key ? "active" : ""}`}
+            onClick={() => setTab(item.key)}
+            style={{ position: "relative" }}
+          >
+            <div className="nav-icon">{item.icon}</div>
+            <div className="nav-label">{item.label}</div>
+            {item.badge > 0 && <div className="nav-badge">{item.badge}</div>}
+          </button>
+        ))}
+      </div>
+      
+      {/* 예약 바텀시트 */}
+      {selectedGonggu && (
+        <ReserveSheet 
+          gonggu={selectedGonggu}
+          market={MARKETS.find(m => m.id === selectedGonggu.marketId)}
+          onClose={() => setSelectedGonggu(null)}
+          onConfirm={handleConfirmReserve}
+        />
+      )}
+      
+      {/* 예약 완료 시트 */}
+      {completeReservation && (
+        <ReserveCompleteSheet 
+          reservation={completeReservation}
+          onClose={() => setCompleteReservation(null)}
+        />
+      )}
+      
+      {/* 토스트 */}
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+// 루트 렌더링
+function App() {
+  return (
+    <div className="proto-container">
+      <div className="phone-frame">
+        <div className="phone-notch" />
+        <ConsumerApp />
+      </div>
+      
+      {/* 가이드 패널 */}
+      <div className="guide-panel">
+        <div className="guide-title">📱 소비자 앱 프로토타입</div>
+        
+        <div className="guide-step">
+          <div className="guide-num">1</div>
+          <div className="guide-text">
+            <h4>공구 탭</h4>
+            <p>날짜별(오늘/내일/이번주), 카테고리별로 공구 상품을 탐색해요.</p>
+          </div>
+        </div>
+        
+        <div className="guide-step">
+          <div className="guide-num">2</div>
+          <div className="guide-text">
+            <h4>지도 탭</h4>
+            <p>내 주변 마켓 위치 확인. 마켓 탭하면 오늘 공구 확인 가능.</p>
+          </div>
+        </div>
+        
+        <div className="guide-step">
+          <div className="guide-num">3</div>
+          <div className="guide-text">
+            <h4>예약하기</h4>
+            <p>상품 카드 → "예약하기" → 수량 선택 → 완료. 결제는 현장에서!</p>
+          </div>
+        </div>
+        
+        <div className="guide-step">
+          <div className="guide-num">4</div>
+          <div className="guide-text">
+            <h4>내 예약 탭</h4>
+            <p>예약 상태 확인, 입고 완료 시 QR 코드로 픽업.</p>
+          </div>
+        </div>
+        
+        <div className="guide-note">
+          💡 <strong>실제 공구 플로우 기반</strong><br/><br/>
+          • 입고 예정일 기준 공구 오픈<br/>
+          • 날짜별/카테고리별 필터<br/>
+          • 상품명 + 수량 간단 예약<br/>
+          • 입고 완료 → 픽업 알림
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

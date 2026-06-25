@@ -1,0 +1,3296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>온맘마켓 — 인터랙티브 프로토타입 v4 (플로우 연결)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+:root{
+  --p:#1A6840;--p2:#2A9E5F;--p-lt:#EAF7F0;
+  --acc:#FF5C38;--acc-lt:#FFF1EE;
+  --warn:#FF9500;--warn-lt:#FFF8EC;
+  --dk:#111827;--g1:#4B5563;--g2:#9CA3AF;--g3:#E5E7EB;--g4:#F5F6F8;
+  --card:#fff;
+  --r-sm:12px;--r:16px;--r-lg:24px;--r-xl:32px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --shadow:0 2px 8px rgba(0,0,0,.07),0 8px 24px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.12);
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#EDEEF2;min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+.proto-hd{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(17,24,39,.97);backdrop-filter:blur(12px);
+  padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.proto-hd-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#D1FAE5;letter-spacing:.3px;}
+.mode-pills{display:flex;background:rgba(255,255,255,.08);border-radius:50px;padding:3px;gap:2px;}
+.mode-pill{padding:6px 18px;font-size:12px;font-weight:700;border:none;background:transparent;color:rgba(255,255,255,.5);border-radius:50px;transition:all .2s;}
+.mode-pill.on{background:#1A6840;color:#fff;}
+
+.consumer-wrap{display:flex;align-items:flex-start;justify-content:center;gap:28px;padding:72px 24px 40px;}
+.phone{width:375px;height:812px;flex-shrink:0;position:relative;background:#fff;border-radius:50px;overflow:hidden;box-shadow:0 0 0 10px #1c1c1e,0 0 0 12px #3a3a3c,0 28px 60px rgba(0,0,0,.5);}
+.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:126px;height:34px;background:#1c1c1e;border-radius:0 0 22px 22px;z-index:50;}
+.phone-inner{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+.sbar{height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:12px;font-weight:600;flex-shrink:0;}
+.screen-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.screen-scroll::-webkit-scrollbar{display:none;}
+
+/* 바텀탭 - 새 디자인 */
+.btab{
+  flex-shrink:0;height:76px;background:#fff;
+  border-top:1px solid var(--g3);
+  display:flex;padding:6px 8px 18px;gap:4px;
+}
+.btab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;border:none;background:transparent;cursor:pointer;border-radius:14px;
+  transition:background .15s;
+}
+.btab-item:active{background:#F3F4F6;}
+.btab-icon-wrap{
+  width:42px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:14px;transition:all .2s;
+}
+.btab-item.on .btab-icon-wrap{background:var(--p-lt);}
+.btab-icon{font-size:20px;line-height:1;}
+.btab-label{font-size:10px;font-weight:600;color:var(--g2);}
+.btab-item.on .btab-label{color:var(--p);font-weight:800;}
+
+/* 공통 */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.chip-outline{border:1.5px solid var(--g3);color:var(--g1);background:#fff;}
+.chip-active{background:var(--p);color:#fff;border:1.5px solid var(--p);}
+.chip-red{background:#FEE2E2;color:#DC2626;}
+.chip-green{background:#D1FAE5;color:#065F46;}
+.chip-orange{background:#FFEDD5;color:#C2410C;}
+.chip-blue{background:#DBEAFE;color:#1D4ED8;}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow-sm);}
+.btn-p{width:100%;padding:16px;border:none;border-radius:var(--r);background:var(--p);color:#fff;font-size:15px;font-weight:800;letter-spacing:.2px;transition:opacity .15s;}
+.btn-p:active{opacity:.85;}
+.btn-outline{width:100%;padding:15px;border:2px solid var(--p);border-radius:var(--r);background:#fff;color:var(--p);font-size:14px;font-weight:700;}
+.gauge{background:var(--g3);border-radius:50px;overflow:hidden;}
+.gauge-fill{height:100%;border-radius:50px;transition:width .4s ease;}
+.grad-hd{background:linear-gradient(140deg,#1A6840 0%,#2A9E5F 100%);padding:0 18px;flex-shrink:0;}
+
+/* 지도 - 업그레이드 */
+.map-bg{background:linear-gradient(160deg,#d4edda 0%,#c8e6d0 50%,#d8ead0 100%);position:relative;overflow:hidden;}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px);background-size:28px 28px;}
+.map-road{position:absolute;background:rgba(255,255,255,.7);}
+.map-road-label{position:absolute;background:rgba(255,255,255,.6);font-size:9px;font-weight:700;color:#4B5563;padding:2px 6px;border-radius:4px;}
+.m-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;transition:all .4s ease;}
+.m-pin-card{background:#fff;border-radius:10px;padding:6px 10px;box-shadow:var(--shadow);white-space:nowrap;}
+.m-pin-card.hot{background:var(--acc);color:#fff;}
+.m-pin-tail{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #fff;margin:0 auto;}
+.m-pin-tail.hot{border-top-color:var(--acc);}
+.my-dot-wrap{position:absolute;transform:translate(-50%,-50%);}
+.my-dot{width:16px;height:16px;border-radius:50%;background:#1D4ED8;border:3px solid #fff;box-shadow:0 0 0 5px rgba(29,78,216,.2);}
+.my-dot-pulse{position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(29,78,216,.12);top:-8px;left:-8px;}
+
+/* 지역 선택 드롭다운 */
+.loc-bar{
+  position:absolute;top:12px;left:10px;right:10px;z-index:10;
+  display:flex;gap:8px;align-items:center;
+}
+.loc-selector{
+  flex:1;background:#fff;border-radius:14px;padding:10px 14px;
+  display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.14);
+  cursor:pointer;border:none;
+}
+.loc-compass{
+  width:34px;height:34px;background:#fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 4px 14px rgba(0,0,0,.14);border:none;flex-shrink:0;
+}
+
+/* 재검색 버튼 */
+.research-btn{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:10;
+  background:#fff;border:none;border-radius:50px;padding:8px 18px;
+  font-size:12px;font-weight:800;color:var(--p);
+  box-shadow:0 4px 16px rgba(0,0,0,.18);display:flex;align-items:center;gap:6px;
+  white-space:nowrap;transition:all .2s;
+}
+.research-btn:active{transform:translateX(-50%) scale(.96);}
+
+/* 토스트 */
+.toast{
+  position:absolute;top:72px;left:50%;transform:translateX(-50%);z-index:30;
+  background:var(--dk);color:#fff;border-radius:50px;padding:8px 16px;
+  font-size:12px;font-weight:700;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+
+/* 마켓 하단 카드 리스트 */
+.mkt-shelf{
+  background:#fff;border-top:1px solid var(--g3);padding:14px 0 10px;flex-shrink:0;
+}
+.mkt-shelf-hd{display:flex;justify-content:space-between;align-items:center;padding:0 16px;margin-bottom:10px;}
+.mkt-shelf-title{font-size:13px;font-weight:800;color:var(--dk);}
+.mkt-card-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;}
+.mkt-card-scroll::-webkit-scrollbar{display:none;}
+.mkt-card-mini{
+  flex-shrink:0;width:158px;background:var(--g4);border-radius:var(--r);padding:12px;
+  cursor:pointer;border:1.5px solid transparent;transition:all .2s;
+}
+.mkt-card-mini:active{transform:scale(.97);}
+.mkt-card-mini.sel{border-color:var(--p);background:var(--p-lt);}
+
+/* 피드 화면 상단 바 */
+.feed-top{background:#fff;border-bottom:1px solid #F3F4F6;padding:10px 16px 10px;}
+
+/* 상품 카드 */
+.pcard{background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:10px;cursor:pointer;transition:transform .12s;}
+.pcard:active{transform:scale(.985);}
+
+/* 가이드 패널 */
+.guide-pane{background:#fff;border-radius:20px;padding:24px;box-shadow:var(--shadow);width:264px;flex-shrink:0;align-self:flex-start;}
+.gp-title{font-size:13px;font-weight:800;color:var(--dk);margin-bottom:16px;}
+.gp-row{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;}
+.gp-num{width:22px;height:22px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.gp-txt{font-size:12px;color:var(--g1);line-height:1.55;}
+.gp-lbl{font-size:10px;font-weight:700;color:var(--p);background:var(--p-lt);padding:2px 8px;border-radius:50px;display:inline-block;margin-bottom:3px;}
+.gp-note{background:var(--warn-lt);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--warn);font-weight:600;border:1px solid #FFE5A8;margin-top:16px;}
+
+/* 사장님 대시보드 */
+.dash-wrap{display:flex;height:calc(100vh - 52px);margin-top:52px;}
+.dash-side{width:228px;background:#111827;flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto;}
+.ds-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.ds-logo-name{font-size:16px;font-weight:800;color:#D1FAE5;display:flex;align-items:center;gap:6px;}
+.ds-logo-sub{font-size:11px;color:#6EE7B7;margin-top:3px;}
+.ds-section-lbl{font-size:10px;font-weight:700;color:#6EE7B7;letter-spacing:.8px;padding:16px 16px 4px;}
+.ds-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;margin:1px 8px;cursor:pointer;color:#9CA3AF;font-size:13px;font-weight:500;transition:all .15s;}
+.ds-item:hover{background:rgba(255,255,255,.06);}
+.ds-item.on{background:#1A6840;color:#fff;font-weight:700;}
+.ds-item-ic{font-size:16px;width:20px;text-align:center;}
+.ds-foot{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);}
+.ds-foot-stat{font-size:11px;color:#6EE7B7;margin-top:2px;}
+.dash-main{flex:1;overflow-y:auto;background:#F4F6F4;padding:32px 36px;}
+.dash-main::-webkit-scrollbar{width:4px;}
+.dash-main::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px;}
+.dm-title{font-size:24px;font-weight:800;color:var(--dk);}
+.dm-sub{font-size:13px;color:var(--g2);margin-top:4px;margin-bottom:28px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.kpi-c{background:#fff;border-radius:16px;padding:20px;box-shadow:var(--shadow-sm);border:1px solid var(--g3);}
+.kpi-lbl{font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px;}
+.kpi-val{font-size:26px;font-weight:800;}
+.kpi-sub{font-size:11px;font-weight:600;color:var(--p);margin-top:4px;}
+.dt-wrap{background:#fff;border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;}
+.dt-hd{padding:18px 22px;border-bottom:1px solid var(--g3);display:flex;justify-content:space-between;align-items:center;}
+.dt-title{font-size:15px;font-weight:700;color:var(--dk);}
+table{width:100%;border-collapse:collapse;}
+th{background:#F9FAFB;padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--g2);border-bottom:1px solid var(--g3);letter-spacing:.3px;}
+td{padding:13px 16px;font-size:13px;color:var(--g1);border-bottom:1px solid #F9FAFB;}
+tr:last-child td{border:none;}
+tr:hover td{background:#FAFBFA;}
+.fw{background:#fff;border-radius:16px;padding:28px;box-shadow:var(--shadow-sm);}
+.frow{margin-bottom:18px;}
+.flabel{display:block;font-size:12px;font-weight:700;color:var(--dk);margin-bottom:6px;}
+.finput{width:100%;padding:11px 14px;border:1.5px solid var(--g3);border-radius:10px;font-size:14px;color:var(--dk);outline:none;transition:border .2s;background:#fff;}
+.finput:focus{border-color:var(--p);}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fs-title{font-size:13px;font-weight:800;color:var(--p);margin:22px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--p-lt);}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;}
+.modal-box{background:#fff;border-radius:24px;padding:32px;width:480px;text-align:center;}
+.notice-bar{background:linear-gradient(90deg,#1A6840,#2A9E5F);padding:10px 18px;display:flex;align-items:center;gap:8px;}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.pulse{animation:pulse 1.8s infinite;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.slide-up{animation:slideUp .25s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.fade-in{animation:fadeIn .3s ease;}
+@keyframes toastIn{0%{opacity:0;transform:translateX(-50%) translateY(-8px)}100%{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{0%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+
+/* 듀얼 뷰 모드 */
+.dual-wrap{display:flex;align-items:flex-start;justify-content:center;gap:48px;padding:72px 24px 40px;}
+.dual-phone-section{display:flex;flex-direction:column;align-items:center;}
+.dual-phone-label{font-size:11px;font-weight:700;color:#9CA3AF;text-align:center;margin-bottom:12px;letter-spacing:.5px;}
+.dual-guide{width:320px;background:#fff;border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-top:20px;}
+.sync-indicator{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:300;background:#111827;color:#fff;padding:12px 24px;border-radius:50px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:slideUp .3s ease;}
+.sync-indicator.success{background:#059669;}
+.sync-indicator.alert{background:#FF5C38;}
+@keyframes syncPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#6EE7B7;animation:syncPulse 1.5s infinite;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,createContext,useContext} = React;
+
+/* ══════════════════════════════════════════════════════════════
+   공유 상태 관리 시스템 (SharedStore)
+   - 소비자 앱 ↔ 사장님 앱 간 실시간 데이터 동기화
+   ══════════════════════════════════════════════════════════════ */
+
+// 전역 상태 저장소
+const SharedStoreContext = createContext(null);
+
+function createSharedStore() {
+  let listeners = [];
+  let state = {
+    // 실시간 예약 목록 (양쪽 앱에서 공유)
+    liveReservations: [
+      {id:"R-2341",user:"김지연",product:"제주 은갈치 특대 5마리",productId:1,qty:1,amount:18500,slot:"15:00–16:00",date:"3/5(수)",status:"예약완료",time:"09:15",img:"🐟",market:"온맘마켓 일산점",addr:"경기 고양시 일산동구 강촌로 27"},
+    ],
+    // 알림 목록
+    alerts: [],
+    // 마지막 동기화 이벤트 (UI 표시용)
+    lastSync: null,
+    // 예약 번호 시퀀스
+    reservationSeq: 2342,
+  };
+  
+  return {
+    getState: () => state,
+    setState: (partial) => {
+      state = { ...state, ...partial };
+      listeners.forEach(l => l(state));
+    },
+    subscribe: (listener) => {
+      listeners.push(listener);
+      return () => { listeners = listeners.filter(l => l !== listener); };
+    },
+    // 새 예약 추가 (소비자 앱에서 호출)
+    addReservation: (product, qty, slot) => {
+      const newId = `R-${state.reservationSeq}`;
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      const newResv = {
+        id: newId,
+        user: "김지연",
+        product: product.name,
+        productId: product.id,
+        qty,
+        amount: product.price * qty,
+        slot,
+        date: product.date,
+        status: "예약완료",
+        time: timeStr,
+        img: product.img,
+        market: `온맘마켓 ${product.market}`,
+        addr: "경기 고양시 일산동구 강촌로 27",
+        resvedAt: `3/2(월) 오후 ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`,
+      };
+      const newAlert = {
+        id: Date.now(),
+        type: "예약",
+        icon: "📋",
+        msg: `김지연님이 ${product.name} ${qty}개를 예약했어요`,
+        time: timeStr,
+        read: false,
+        resvId: newId,
+      };
+      state = {
+        ...state,
+        liveReservations: [newResv, ...state.liveReservations],
+        alerts: [newAlert, ...state.alerts],
+        reservationSeq: state.reservationSeq + 1,
+        lastSync: { type: 'new_reservation', data: newResv, timestamp: Date.now() },
+      };
+      listeners.forEach(l => l(state));
+      return newResv;
+    },
+    // 픽업 완료 처리 (사장님 앱에서 호출)
+    completePickup: (resvId) => {
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      const resv = state.liveReservations.find(r => r.id === resvId);
+      if (!resv) return null;
+      
+      const updatedReservations = state.liveReservations.map(r => 
+        r.id === resvId ? { ...r, status: "픽업완료", paidAt: `3/2(월) 오후 ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}` } : r
+      );
+      const newAlert = {
+        id: Date.now(),
+        type: "픽업",
+        icon: "✅",
+        msg: `${resv.user}님이 ${resv.product}를 픽업 완료했어요`,
+        time: timeStr,
+        read: false,
+        resvId,
+      };
+      state = {
+        ...state,
+        liveReservations: updatedReservations,
+        alerts: [newAlert, ...state.alerts],
+        lastSync: { type: 'pickup_complete', data: resv, timestamp: Date.now() },
+      };
+      listeners.forEach(l => l(state));
+      return resv;
+    },
+    // 알림 읽음 처리
+    markAlertRead: (alertId) => {
+      state = {
+        ...state,
+        alerts: state.alerts.map(a => a.id === alertId ? { ...a, read: true } : a),
+      };
+      listeners.forEach(l => l(state));
+    },
+    markAllAlertsRead: () => {
+      state = {
+        ...state,
+        alerts: state.alerts.map(a => ({ ...a, read: true })),
+      };
+      listeners.forEach(l => l(state));
+    },
+  };
+}
+
+// 커스텀 훅: 공유 상태 사용
+function useSharedStore() {
+  const store = useContext(SharedStoreContext);
+  const [state, setState] = useState(store.getState());
+  useEffect(() => {
+    return store.subscribe(setState);
+  }, [store]);
+  return { state, ...store };
+}
+
+/* ── 지역별 데이터 ── */
+const AREA_DATA = {
+  "일산동구": {
+    center:{x:"50%",y:"52%"},
+    markets:[
+      {id:1,name:"온맘마켓 일산점",cat:"신선식품·생활용품",dist:"0.5km",rating:4.8,reviews:213,open:"화·목·토 12–18시",tag:"인기",emoji:"🥬",pin:{x:"29%",y:"44%"},hot:true},
+      {id:2,name:"온맘마켓 마두점",cat:"베이커리·떡·간식",dist:"1.2km",rating:4.9,reviews:134,open:"월·수·금 13–19시",tag:"신규",emoji:"🍞",pin:{x:"67%",y:"28%"},hot:false},
+      {id:3,name:"온맘마켓 백석점",cat:"과일·잡곡·건강",dist:"1.9km",rating:4.7,reviews:88,open:"화·목 11–17시",tag:"",emoji:"🍎",pin:{x:"76%",y:"64%"},hot:false},
+    ],
+    roads:[
+      {top:"38%",left:0,right:0,height:9,label:"중앙로",lx:"12%",ly:"30%"},
+      {top:"67%",left:0,right:0,height:7},
+      {left:"28%",top:0,bottom:0,width:9,label:"일산로",lx:"29%",ly:"8%"},
+      {left:"65%",top:0,bottom:0,width:7},
+    ]
+  },
+  "덕양구": {
+    center:{x:"45%",y:"48%"},
+    markets:[
+      {id:4,name:"온맘마켓 화정점",cat:"수산·정육·반찬",dist:"0.8km",rating:4.6,reviews:97,open:"월·수·금 12–18시",tag:"인기",emoji:"🐠",pin:{x:"38%",y:"55%"},hot:true},
+      {id:5,name:"온맘마켓 능곡점",cat:"유기농·건강식품",dist:"2.1km",rating:4.8,reviews:61,open:"화·목·토 13–18시",tag:"신규",emoji:"🌿",pin:{x:"62%",y:"35%"},hot:false},
+    ],
+    roads:[
+      {top:"50%",left:0,right:0,height:9,label:"화정로"},
+      {top:"25%",left:0,right:0,height:6},
+      {left:"40%",top:0,bottom:0,width:9,label:"능곡대로",lx:"41%",ly:"8%"},
+    ]
+  },
+  "파주시": {
+    center:{x:"52%",y:"55%"},
+    markets:[
+      {id:6,name:"온맘마켓 운정점",cat:"신선식품·생활용품",dist:"1.1km",rating:4.5,reviews:44,open:"목·토 12–17시",tag:"신규",emoji:"🥕",pin:{x:"45%",y:"40%"},hot:false},
+    ],
+    roads:[
+      {top:"42%",left:0,right:0,height:8,label:"운정로"},
+      {left:"50%",top:0,bottom:0,width:8},
+    ]
+  }
+};
+
+const MARKET_DETAIL = {
+  1:{
+    addr:"경기 고양시 일산동구 강촌로 27 일산시장 1층",
+    notice:"오늘 은갈치 공구 마감임박! 잔여 13개 — 오후 6시까지 예약 가능합니다 🔥",
+    desc:"일산 최초 오프라인 공동구매 마켓. 매주 화·목·토요일 운영하며 당일 산지직송 신선식품을 최대 60% 할인가에 만나보세요.",
+    stats:{rsv:"1,240",revisit:"74%",save:"₩28,400",nosh:"1.2%"},
+    openDays:[1,3,5],
+    reviews:[
+      {name:"김**",score:5,text:"갈치가 진짜 신선해요! 마트보다 훨씬 싸고 질도 좋아서 단골됐어요.",date:"2주 전"},
+      {name:"박**",score:5,text:"직원분들이 친절하고 픽업도 빠릿빠릿하게 해주세요. 강추!",date:"3주 전"},
+      {name:"이**",score:4,text:"달걀 공구 항상 이용해요. 유기농인데 가격이 너무 착해요.",date:"1달 전"},
+    ]
+  },
+  2:{
+    addr:"경기 고양시 일산서구 마두동 818 마두역 상가 B1",
+    notice:"내일 수제 팥앙금 크림빵 공구 오픈! 200개 한정 — 지금 알림 설정하세요 🍞",
+    desc:"마두동 유일 수제 베이커리 공구마켓. 매일 직접 구운 떡과 빵을 정가 대비 최대 50% 할인. 방부제 없는 당일 제조 원칙.",
+    stats:{rsv:"892",revisit:"81%",save:"₩14,200",nosh:"0.8%"},
+    openDays:[0,2,4],
+    reviews:[
+      {name:"최**",score:5,text:"크림빵이 진짜 맛있어요. 카카오 채널 알림 설정해두면 공구 놓치지 않아요.",date:"1주 전"},
+      {name:"정**",score:5,text:"떡 선물세트 두 번 샀는데 품질이 정말 좋아요. 명절 선물로도 추천!",date:"2주 전"},
+    ]
+  },
+  3:{
+    addr:"경기 고양시 일산서구 백석동 1325 백석역 2번 출구 도보 3분",
+    notice:"이번 주 토요일 부사사과 5kg 박스 행사! 8월 직송 예약 지금 시작 🍎",
+    desc:"백석동 과일·잡곡 전문 공구마켓. 산지 직계약으로 중간 유통 없이 최저가. 제철 과일과 국산 잡곡을 매주 엄선해 소개합니다.",
+    stats:{rsv:"428",revisit:"69%",save:"₩19,800",nosh:"2.1%"},
+    openDays:[1,3],
+    reviews:[
+      {name:"홍**",score:4,text:"사과 당도 진짜 좋아요. 박스째 사니까 훨씬 저렴하고.",date:"3주 전"},
+    ]
+  },
+  4:{addr:"경기 고양시 덕양구 화정동 974 화정시장 내",notice:"",desc:"",stats:{rsv:"380",revisit:"66%",save:"₩22,100",nosh:"1.5%"},openDays:[0,2,4],reviews:[]},
+  5:{addr:"경기 고양시 덕양구 능곡동 255-3",notice:"",desc:"",stats:{rsv:"210",revisit:"72%",save:"₩18,600",nosh:"0.9%"},openDays:[1,3,5],reviews:[]},
+  6:{addr:"경기 파주시 운정3동 1793 운정상가 1층",notice:"",desc:"",stats:{rsv:"144",revisit:"58%",save:"₩12,400",nosh:"1.8%"},openDays:[3,5],reviews:[]},
+};
+
+const ALL_PRODUCTS = [
+  {id:1,mid:1,market:"일산점",name:"제주 은갈치 특대 5마리",img:"🐟",orig:38000,price:18500,rsv:87,total:100,dday:1,date:"3/5(수)",cat:"신선식품",desc:"제주 청정 해역에서 잡은 은갈치입니다. 냉장 신선 배송, 픽업 당일 최상의 상태로 준비합니다."},
+  {id:2,mid:2,market:"마두점",name:"수제 팥앙금 크림빵 10개",img:"🥐",orig:20000,price:9800,rsv:142,total:200,dday:2,date:"3/6(목)",cat:"베이커리",desc:"매장 직접 제조한 팥앙금 크림빵입니다. 방부제 없이 당일 제조합니다."},
+  {id:3,mid:1,market:"일산점",name:"국산 유기농 달걀 30구",img:"🥚",orig:13000,price:7200,rsv:56,total:150,dday:3,date:"3/7(금)",cat:"신선식품",desc:"국내 인증 유기농 농장 달걀. 항생제·호르몬제 무사용."},
+  {id:4,mid:3,market:"백석점",name:"부사 사과 5kg 박스",img:"🍎",orig:30000,price:14800,rsv:34,total:80,dday:4,date:"3/8(토)",cat:"과일",desc:"경북 영주 고랭지 부사 사과. 당도 14 브릭스 이상 선별."},
+  {id:5,mid:2,market:"마두점",name:"찰떡 모둠 선물세트 2kg",img:"🍡",orig:22000,price:11000,rsv:61,total:100,dday:5,date:"3/9(일)",cat:"떡·간식",desc:"쑥떡, 콩떡, 팥떡, 참깨떡 4가지 모둠."},
+  {id:6,mid:4,market:"화정점",name:"국내산 고등어 10마리",img:"🐡",orig:28000,price:13500,rsv:45,total:80,dday:2,date:"3/6(목)",cat:"신선식품",desc:"서해 신선 고등어. 당일 경매 직송."},
+  {id:7,mid:5,market:"능곡점",name:"유기농 쌈채소 500g",img:"🥬",orig:8000,price:3900,rsv:88,total:120,dday:1,date:"3/5(수)",cat:"신선식품",desc:"무농약 인증 쌈채소 모둠. 8종 혼합."},
+  {id:8,mid:6,market:"운정점",name:"당근 3kg 박스",img:"🥕",orig:12000,price:5800,rsv:22,total:60,dday:5,date:"3/9(일)",cat:"과일",desc:"파주 산지 직송 당근. 아삭하고 달달합니다."},
+];
+
+const MY_RESERVATIONS=[
+  {id:"R-2341",name:"제주 은갈치 특대 5마리",market:"온맘마켓 일산점",addr:"경기 고양시 일산동구 강촌로 27",date:"3/5(수)",slot:"15:00–16:00",qty:1,status:"예약완료",price:18500,img:"🐟",resvedAt:"3/2(월) 오전 10:23",cat:"신선식품"},
+  {id:"R-2298",name:"양배추즙 30팩",market:"온맘마켓 일산점",addr:"경기 고양시 일산동구 강촌로 27",date:"2/22(토)",slot:"13:00–14:00",qty:2,status:"픽업완료",price:15000,img:"🥬",resvedAt:"2/20(목) 오후 2:11",paidAt:"2/22(토) 오후 1:38",cat:"건강식품"},
+  {id:"R-2271",name:"제주 한라봉 3kg",market:"온맘마켓 백석점",addr:"경기 고양시 일산서구 백석동 1325",date:"2/15(토)",slot:"14:00–15:00",qty:1,status:"픽업완료",price:12000,img:"🍊",resvedAt:"2/13(목) 오전 11:05",paidAt:"2/15(토) 오후 2:14",cat:"과일"},
+];
+const RESERVATIONS=[
+  {id:"R-2341",user:"김지연",product:"제주 은갈치 특대 5마리",qty:1,amount:18500,date:"3/5(수) 15:00",status:"대기"},
+  {id:"R-2340",user:"박민준",product:"국산 유기농 달걀 30구",qty:2,amount:14400,date:"3/7(금) 14:00",status:"대기"},
+  {id:"R-2339",user:"이수정",product:"제주 은갈치 특대 5마리",qty:1,amount:18500,date:"3/5(수) 13:00",status:"완료"},
+  {id:"R-2338",user:"최현우",product:"부사 사과 5kg 박스",qty:1,amount:14800,date:"3/8(토) 16:00",status:"대기"},
+  {id:"R-2337",user:"정다은",product:"수제 팥앙금 크림빵 10개",qty:1,amount:9800,date:"3/6(목) 15:00",status:"완료"},
+  {id:"R-2336",user:"홍성민",product:"국산 유기농 달걀 30구",qty:3,amount:21600,date:"3/7(금) 13:00",status:"노쇼"},
+];
+const INIT_LIKES=[
+  {id:1,name:"제주 은갈치 특대 5마리",market:"온맘마켓 일산점",img:"🐟",price:18500,dday:1},
+  {id:3,name:"국산 유기농 달걀 30구",market:"온맘마켓 일산점",img:"🥚",price:7200,dday:3},
+  {id:5,name:"찰떡 모둠 선물세트 2kg",market:"온맘마켓 마두점",img:"🍡",price:11000,dday:5},
+];
+
+function pct(p){return Math.round((p.rsv/p.total)*100);}
+function remain(p){return p.total-p.rsv;}
+function disc(p){return Math.round((1-p.price/p.orig)*100);}
+
+/* ── 탐색 화면 (새 설계) ── */
+function ExploreScreen({onMarket,onFeed}){
+  const AREAS=["일산동구","덕양구","파주시"];
+  const [area,setArea]=useState("일산동구");
+  const [showDrop,setShowDrop]=useState(false);
+  const [toast,setToast]=useState(null);
+  const [showResearch,setShowResearch]=useState(false);
+  const [selMkt,setSelMkt]=useState(null);
+  const [animKey,setAnimKey]=useState(0);
+  const areaData=AREA_DATA[area];
+
+  function changeArea(a){
+    setArea(a);setShowDrop(false);setAnimKey(k=>k+1);
+    setShowResearch(false);
+    const cnt=AREA_DATA[a].markets.length;
+    setToast(`📍 ${a}으로 이동 — 마켓 ${cnt}곳 발견!`);
+    setTimeout(()=>setToast(null),2800);
+    setSelMkt(null);
+  }
+  function handleResearch(){
+    setShowResearch(false);
+    setAnimKey(k=>k+1);
+    setToast(`🔄 재검색 완료 — ${areaData.markets.length}곳 발견!`);
+    setTimeout(()=>setToast(null),2000);
+  }
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div className="sbar" style={{background:"#fff",color:"#111827",flexShrink:0}}>
+        <span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span>
+      </div>
+
+      {/* 지도 영역 */}
+      <div className="map-bg" style={{flex:"0 0 420px",position:"relative"}}>
+        <div className="map-grid"/>
+        {/* 도로 */}
+        {areaData.roads.map((r,i)=>(
+          <div key={i}>
+            <div className="map-road" style={{top:r.top,left:r.left,right:r.right,bottom:r.bottom,height:r.height,width:r.width}}/>
+            {r.label&&<div className="map-road-label" style={{top:r.ly||"40%",left:r.lx||"10%"}}>{r.label}</div>}
+          </div>
+        ))}
+        {/* 내 위치 */}
+        <div className="my-dot-wrap" style={{left:areaData.center.x,top:areaData.center.y}}>
+          <div className="my-dot-pulse"/>
+          <div className="my-dot"/>
+        </div>
+        {/* 마켓 핀 */}
+        {areaData.markets.map(m=>(
+          <div key={`${animKey}-${m.id}`} className="m-pin fade-in" style={{left:m.pin.x,top:m.pin.y}} onClick={()=>setSelMkt(m)}>
+            <div className={`m-pin-card${m.hot?" hot":""}`}>
+              <span style={{fontSize:11,fontWeight:800}}>{m.emoji} {m.name.replace("온맘마켓 ","")}</span><br/>
+              <span style={{fontSize:9}}>{m.dist}{m.hot?" · 오늘 행사!":""}</span>
+            </div>
+            <div className={`m-pin-tail${m.hot?" hot":""}`}/>
+          </div>
+        ))}
+        {/* 지역 선택 바 */}
+        <div className="loc-bar">
+          <button className="loc-selector" onClick={()=>setShowDrop(d=>!d)}>
+            <span style={{fontSize:15}}>📍</span>
+            <span style={{flex:1,textAlign:"left",fontSize:13,fontWeight:700,color:"#111827"}}>{area}</span>
+            <span style={{fontSize:11,fontWeight:800,color:"#2A9E5F",background:"#EAF7F0",padding:"3px 8px",borderRadius:50,marginRight:4}}>{areaData.markets.length}곳</span>
+            <span style={{fontSize:13,color:"#9CA3AF"}}>{showDrop?"▲":"▼"}</span>
+          </button>
+          <button className="loc-compass" onClick={()=>{setShowResearch(true);}}>🧭</button>
+        </div>
+        {/* 드롭다운 */}
+        {showDrop&&(
+          <div className="fade-in" style={{position:"absolute",top:60,left:10,right:54,background:"#fff",borderRadius:14,overflow:"hidden",zIndex:20,boxShadow:"0 8px 28px rgba(0,0,0,.18)"}}>
+            {AREAS.map(a=>(
+              <button key={a} onClick={()=>changeArea(a)} style={{width:"100%",padding:"12px 16px",border:"none",background:area===a?"#EAF7F0":"#fff",color:area===a?"#1A6840":"#111827",fontWeight:area===a?800:500,fontSize:13,textAlign:"left",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #F3F4F6"}}>
+                <span>📍 {a}</span>
+                <span style={{fontSize:11,color:"#9CA3AF"}}>{AREA_DATA[a].markets.length}개 마켓</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {/* 재검색 버튼 */}
+        {showResearch&&(
+          <button className="research-btn fade-in" onClick={handleResearch}>
+            🔄 이 지역 재검색
+          </button>
+        )}
+        {/* 토스트 */}
+        {toast&&(
+          <div className="toast fade-in">{toast}</div>
+        )}
+      </div>
+
+      {/* 마켓 카드 리스트 */}
+      <div className="mkt-shelf" style={{flex:1,overflowY:"auto"}}>
+        <div className="mkt-shelf-hd">
+          <span className="mkt-shelf-title">📍 {area} 마켓 {areaData.markets.length}곳</span>
+          <span style={{fontSize:11,color:selMkt?"#2A9E5F":"#9CA3AF",fontWeight:700}}>{selMkt?"위치 확인됨 ✓":"핀을 탭해 선택"}</span>
+        </div>
+        <div className="mkt-card-scroll">
+          {areaData.markets.map(m=>{
+            const mProds=ALL_PRODUCTS.filter(p=>p.mid===m.id);
+            const isSel=selMkt&&selMkt.id===m.id;
+            return(
+              <div key={m.id} className={`mkt-card-mini${isSel?" sel":""}`} onClick={()=>setSelMkt(m)}>
+                {/* 상단: 이모지 + 태그 */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
+                  <div style={{width:38,height:38,background:isSel?"rgba(26,104,64,.15)":"#fff",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{m.emoji}</div>
+                  {m.tag&&<span style={{fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:50,background:m.tag==="인기"?"#FFEDD5":"#DBEAFE",color:m.tag==="인기"?"#C2410C":"#1D4ED8"}}>{m.tag}</span>}
+                </div>
+                {/* 마켓명 */}
+                <div style={{fontSize:12,fontWeight:800,color:"#111827",marginBottom:2,lineHeight:1.3}}>{m.name.replace("온맘마켓 ","")}</div>
+                <div style={{fontSize:10,color:"#6B7280",marginBottom:7}}>{m.cat}</div>
+                {/* 구분선 */}
+                <div style={{height:1,background:"#F3F4F6",marginBottom:7}}/>
+                {/* 상세 정보 */}
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <span style={{fontSize:10,color:"#FFD700"}}>★</span>
+                    <span style={{fontSize:10,fontWeight:700,color:"#374151"}}>{m.rating}</span>
+                    <span style={{fontSize:9,color:"#9CA3AF"}}>({m.reviews})</span>
+                  </div>
+                  <div style={{fontSize:10,color:"#6B7280",display:"flex",alignItems:"center",gap:3}}>
+                    <span>🕐</span>
+                    <span style={{fontSize:9,lineHeight:1.3}}>{m.open}</span>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:2}}>
+                    <span style={{fontSize:9,color:"#9CA3AF",fontWeight:600}}>📍 {m.dist}</span>
+                    {mProds.length>0
+                      ? <span style={{fontSize:9,fontWeight:800,color:"#1A6840",background:"#EAF7F0",padding:"2px 6px",borderRadius:50}}>상품 {mProds.length}개</span>
+                      : <span style={{fontSize:9,color:"#D1D5DB"}}>상품 준비중</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {selMkt&&(
+          <div className="fade-in" style={{margin:"12px 16px 0"}}>
+            <button onClick={()=>onMarket(selMkt)} style={{width:"100%",padding:"13px",background:"#1A6840",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              {selMkt.emoji} {selMkt.name} 바로가기 →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── 피드 화면 ── */
+function FeedScreen({onProduct}){
+  const [cat,setCat]=useState("전체");
+  const cats=["전체","신선식품","베이커리","과일","떡·간식"];
+  const list=cat==="전체"?ALL_PRODUCTS:ALL_PRODUCTS.filter(p=>p.cat===cat||p.cat.includes(cat));
+  return(
+    <div className="slide-up">
+      <div className="sbar" style={{background:"#fff",color:"#111827"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+      <div style={{padding:"4px 16px 12px",background:"#fff",borderBottom:"1px solid #F3F4F6"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#111827"}}>행사 피드</div>
+        <div style={{fontSize:12,color:"#9CA3AF",marginTop:2}}>고양시 일산동구 · 반경 5km</div>
+      </div>
+      <div className="feed-top" style={{display:"flex",gap:6,overflowX:"auto",padding:"10px 16px"}}>
+        {cats.map(c=><button key={c} className={`chip ${cat===c?"chip-active":"chip-outline"}`} onClick={()=>setCat(c)} style={{fontSize:12}}>{c}</button>)}
+      </div>
+      <div style={{padding:"12px 16px 0",background:"#F4F6F4"}}>
+        {list.map(p=><PCardSm key={p.id} p={p} onClick={()=>onProduct(p)}/>)}
+      </div>
+      <div style={{height:16,background:"#F4F6F4"}}/>
+    </div>
+  );
+}
+
+/* ── 상품 카드 (소) ── */
+function PCardSm({p,onClick}){
+  const r=remain(p),pc=pct(p);
+  return(
+    <div className="pcard" onClick={onClick}>
+      <div style={{display:"flex",gap:12,padding:"12px 14px",alignItems:"flex-start"}}>
+        <div style={{width:60,height:60,background:"#F0FFF4",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,flexShrink:0}}>{p.img}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:4,flexWrap:"wrap"}}>
+            {p.dday<=1&&<span className="chip chip-red pulse" style={{fontSize:10,padding:"2px 7px"}}>🔥 마감임박</span>}
+            <span style={{fontSize:11,color:"#9CA3AF",fontWeight:500}}>{p.market}</span>
+          </div>
+          <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+            <span style={{fontSize:16,fontWeight:800,color:"#FF5C38"}}>₩{p.price.toLocaleString()}</span>
+            <span style={{fontSize:11,color:"#D1D5DB",textDecoration:"line-through"}}>₩{p.orig.toLocaleString()}</span>
+            <span className="chip chip-red" style={{fontSize:10,padding:"2px 6px"}}>↓{disc(p)}%</span>
+          </div>
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#9CA3AF",marginBottom:3}}>
+              <span style={{fontWeight:600}}>👥 {p.rsv}명 예약 중</span>
+              <span style={{fontWeight:700,color:r<=20?"#DC2626":"#9CA3AF"}}>잔여 {r}개{r<=20?" ⚡":""}</span>
+            </div>
+            <div className="gauge" style={{height:5}}>
+              <div className="gauge-fill" style={{width:`${pc}%`,background:pc>=80?"#DC2626":pc>=50?"#FF5C38":"#2A9E5F"}}/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 마켓 상세 ── */
+function MarketScreen({market:m,onBack,onProduct}){
+  const mps=ALL_PRODUCTS.filter(p=>p.mid===m.id);
+  const d=MARKET_DETAIL[m.id]||{addr:"",notice:"",desc:"",stats:{rsv:"-",revisit:"-",save:"-",nosh:"-"},openDays:[],reviews:[]};
+  const DAY_KR=["월","화","수","목","금","토","일"];
+  const [cat,setCat]=useState("전체");
+  const [mCopied,setMCopied]=useState(false);
+  const handleMktShare=()=>{
+    navigator.clipboard.writeText("https://onmam.market/m/"+(m.id||1)).catch(()=>{});
+    setMCopied(true);setTimeout(()=>setMCopied(false),2000);
+  };
+  const cats=["전체",...new Set(mps.map(p=>p.cat))];
+  const filtered=cat==="전체"?mps:mps.filter(p=>p.cat===cat);
+  const isOpenToday=d.openDays.includes(new Date().getDay()===0?6:new Date().getDay()-1);
+
+  return(
+    <div className="slide-up">
+      {/* ── 헤더 ── */}
+      <div style={{background:"linear-gradient(145deg,#0f4d2e 0%,#1A6840 55%,#2A9E5F 100%)",paddingBottom:0}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.7)"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{padding:"0 16px 20px"}}>
+          {/* 뒤로 + 찜 버튼 */}
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
+            <button onClick={onBack} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:20,padding:"5px 14px",color:"rgba(255,255,255,.9)",fontSize:12,fontWeight:600}}>← 뒤로</button>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={handleMktShare} style={{background:mCopied?"rgba(34,197,94,.5)":"rgba(255,255,255,.15)",border:"none",borderRadius:20,padding:"5px 14px",color:"rgba(255,255,255,.9)",fontSize:12,fontWeight:600,transition:"background .3s"}}>
+                {mCopied?"✅ 복사됨":"🔗 링크 복사"}
+              </button>
+              <button style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:20,padding:"5px 14px",color:"rgba(255,255,255,.9)",fontSize:12,fontWeight:600}}>🔔 알림받기</button>
+            </div>
+          </div>
+          {/* 마켓 기본정보 */}
+          <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+            <div style={{width:60,height:60,background:"rgba(255,255,255,.18)",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,flexShrink:0,border:"1.5px solid rgba(255,255,255,.25)"}}>{m.emoji}</div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
+                <div style={{fontSize:17,fontWeight:800,color:"#fff"}}>{m.name}</div>
+                {m.tag&&<span style={{fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:50,background:m.tag==="인기"?"#FF9500":"#3B82F6",color:"#fff"}}>{m.tag}</span>}
+              </div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:6}}>{m.cat}</div>
+              <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"#FFD700",fontWeight:700}}>★ {m.rating}</span>
+                <span style={{fontSize:11,color:"rgba(255,255,255,.65)"}}>리뷰 {m.reviews}개</span>
+                <span style={{fontSize:11,color:"rgba(255,255,255,.65)"}}>📍 {m.dist}</span>
+                <span style={{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:50,background:isOpenToday?"#22C55E":"rgba(255,255,255,.15)",color:"#fff"}}>{isOpenToday?"● 오늘 운영":"○ 오늘 휴무"}</span>
+              </div>
+            </div>
+          </div>
+          {/* 영업 요일 */}
+          <div style={{display:"flex",gap:5,marginTop:14,alignItems:"center"}}>
+            <span style={{fontSize:10,color:"rgba(255,255,255,.6)",fontWeight:600,marginRight:2}}>운영일</span>
+            {DAY_KR.map((day,i)=>(
+              <div key={i} style={{width:26,height:26,borderRadius:50,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,background:d.openDays.includes(i)?"rgba(255,255,255,.9)":"rgba(255,255,255,.12)",color:d.openDays.includes(i)?"#1A6840":"rgba(255,255,255,.4)"}}>{day}</div>
+            ))}
+          </div>
+        </div>
+        {/* 통계 바 */}
+        <div style={{display:"flex",background:"rgba(0,0,0,.18)",padding:"12px 16px",gap:0}}>
+          {[["총 예약",d.stats.rsv],["재방문율",d.stats.revisit],["평균 절약",d.stats.save],["노쇼율",d.stats.nosh]].map(([l,v],i)=>(
+            <div key={i} style={{flex:1,textAlign:"center",borderRight:i<3?"1px solid rgba(255,255,255,.12)":"none"}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#fff"}}>{v}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,.55)",marginTop:2,fontWeight:600}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 본문 ── */}
+      <div style={{background:"#F4F6F4"}}>
+
+        {/* 공지 배너 */}
+        {d.notice&&(
+          <div style={{background:"linear-gradient(90deg,#FFF8EC,#FFFBF0)",borderBottom:"1px solid #FFE5A8",padding:"11px 16px",display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:16,flexShrink:0}}>📣</span>
+            <div>
+              <div style={{fontSize:10,fontWeight:800,color:"#FF9500",marginBottom:2}}>오늘의 공지</div>
+              <div style={{fontSize:12,color:"#374151",lineHeight:1.5,fontWeight:500}}>{d.notice}</div>
+            </div>
+          </div>
+        )}
+
+        {/* 마켓 소개 */}
+        {d.desc&&(
+          <div style={{background:"#fff",borderBottom:"1px solid #F3F4F6",padding:"14px 16px"}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#111827",marginBottom:6}}>🏪 마켓 소개</div>
+            <div style={{fontSize:12,color:"#6B7280",lineHeight:1.65}}>{d.desc}</div>
+          </div>
+        )}
+
+        {/* 위치 정보 */}
+        <div style={{background:"#fff",borderBottom:"1px solid #F3F4F6",padding:"14px 16px"}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#111827",marginBottom:8}}>📍 위치 및 운영 정보</div>
+          <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+            {/* 미니 지도 썸네일 */}
+            <div style={{width:72,height:72,background:"linear-gradient(135deg,#d4edda,#c8e6d0)",borderRadius:12,flexShrink:0,position:"relative",overflow:"hidden",border:"1px solid #C6E7C8"}}>
+              <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,.4) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.4) 1px,transparent 1px)",backgroundSize:"10px 10px"}}/>
+              <div style={{position:"absolute",top:"40%",left:0,right:0,height:4,background:"rgba(255,255,255,.7)"}}/>
+              <div style={{position:"absolute",left:"35%",top:0,bottom:0,width:4,background:"rgba(255,255,255,.7)"}}/>
+              <div style={{position:"absolute",top:"30%",left:"28%",transform:"translate(-50%,-100%)"}}>
+                <div style={{background:"#FF5C38",borderRadius:"6px 6px 6px 0",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8}}>📍</div>
+              </div>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,color:"#374151",lineHeight:1.5,marginBottom:6}}>{d.addr}</div>
+              <div style={{fontSize:11,color:"#9CA3AF",marginBottom:8}}>🕐 {m.open}</div>
+              <button style={{background:"#EAF7F0",border:"none",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:700,color:"#1A6840",cursor:"pointer"}}>길찾기 →</button>
+            </div>
+          </div>
+        </div>
+
+        {/* 행사 상품 */}
+        <div style={{padding:"14px 16px 0"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <span style={{fontSize:13,fontWeight:800,color:"#111827"}}>🛍️ 행사 상품 {mps.length}개</span>
+            <span style={{fontSize:11,color:"#9CA3AF"}}>D-day 기준 정렬</span>
+          </div>
+          {/* 카테고리 필터 */}
+          {cats.length>1&&(
+            <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
+              {cats.map(c=>(
+                <button key={c} className={`chip ${cat===c?"chip-active":"chip-outline"}`} onClick={()=>setCat(c)} style={{fontSize:11,flexShrink:0}}>{c}</button>
+              ))}
+            </div>
+          )}
+          {filtered.length>0
+            ? filtered.map(p=><PCardSm key={p.id} p={p} onClick={()=>onProduct(p)}/>)
+            : <div style={{textAlign:"center",padding:"30px 0",color:"#9CA3AF",fontSize:13}}>등록된 행사 상품이 없습니다</div>
+          }
+        </div>
+
+        {/* 리뷰 */}
+        {d.reviews&&d.reviews.length>0&&(
+          <div style={{padding:"14px 16px 0",marginTop:4}}>
+            <div style={{fontSize:13,fontWeight:800,color:"#111827",marginBottom:10}}>💬 이용 후기 {d.reviews.length}개</div>
+            {d.reviews.map((r,i)=>(
+              <div key={i} className="card" style={{padding:"13px 14px",marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{width:26,height:26,background:"#EAF7F0",borderRadius:50,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>👤</div>
+                    <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>{r.name}</span>
+                  </div>
+                  <div style={{display:"flex",gap:3,alignItems:"center"}}>
+                    {"★".repeat(r.score).split("").map((_,si)=><span key={si} style={{fontSize:11,color:"#FFD700"}}>★</span>)}
+                    <span style={{fontSize:10,color:"#9CA3AF",marginLeft:4}}>{r.date}</span>
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:"#4B5563",lineHeight:1.55}}>{r.text}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{height:20,background:"#F4F6F4"}}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── 상품 상세 ── */
+function ProductScreen({p,onBack,onGoToReserve}){
+  const [qty,setQty]=useState(1);
+  const [showShare,setShowShare]=useState(false);
+  const [copied,setCopied]=useState(false);
+  const r=remain(p),pc=pct(p);
+  const shareLink=`https://onmam.market/p/${p.id||1234}`;
+  const handleCopy=()=>{
+    navigator.clipboard.writeText(shareLink).then(()=>{setCopied(true);setTimeout(()=>{setCopied(false);setShowShare(false);},1800);}).catch(()=>{setCopied(true);setTimeout(()=>{setCopied(false);setShowShare(false);},1800);});
+  };
+  return(
+    <div className="slide-up" style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      {/* 공유 바텀 시트 */}
+      {showShare&&(
+        <div style={{position:"absolute",inset:0,zIndex:200,display:"flex",flexDirection:"column",justifyContent:"flex-end"}} onClick={()=>setShowShare(false)}>
+          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.4)"}}/>
+          <div style={{position:"relative",background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 32px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{width:36,height:4,background:"#E5E7EB",borderRadius:50,margin:"0 auto 18px"}}/>
+            <div style={{fontSize:15,fontWeight:800,marginBottom:4}}>공유하기</div>
+            <div style={{fontSize:12,color:"#6B7280",marginBottom:18}}>단톡방에 링크를 공유하세요</div>
+            <div style={{background:"#F9FAFB",border:"1px solid #E5E7EB",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <span style={{fontSize:14}}>🔗</span>
+              <span style={{fontSize:12,color:"#374151",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shareLink}</span>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={handleCopy} style={{flex:1,padding:"13px",background:copied?"#059669":"#1A6840",color:"#fff",border:"none",borderRadius:12,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",transition:"background .3s"}}>
+                {copied?"✅ 복사됐어요!":"링크 복사하기"}
+              </button>
+            </div>
+            {copied&&<div style={{textAlign:"center",marginTop:10,fontSize:12,color:"#059669",fontWeight:700}}>단톡방에 붙여넣기 하세요</div>}
+          </div>
+        </div>
+      )}
+      {/* 스크롤 영역 */}
+      <div style={{flex:1,overflowY:"auto"}}>
+        <div style={{height:220,background:"linear-gradient(160deg,#EAF7F0,#D1FAE5)",position:"relative",display:"flex",alignItems:"center",justifyContent:"center",fontSize:90,flexShrink:0}}>
+          {p.img}
+          <button onClick={onBack} style={{position:"absolute",top:52,left:16,background:"rgba(255,255,255,.85)",border:"none",borderRadius:50,width:34,height:34,fontSize:16,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}>←</button>
+          <div style={{position:"absolute",top:52,right:16,display:"flex",gap:8}}>
+            <button onClick={()=>setShowShare(true)} style={{background:"rgba(255,255,255,.85)",border:"none",borderRadius:50,width:34,height:34,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}>🔗</button>
+            <button style={{background:"rgba(255,255,255,.85)",border:"none",borderRadius:50,width:34,height:34,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}>🤍</button>
+          </div>
+        </div>
+        <div style={{padding:"18px 16px 16px"}}>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+            {p.dday<=1&&<span className="chip chip-red pulse" style={{fontSize:10}}>🔥 마감 D-{p.dday}</span>}
+            <span style={{fontSize:12,color:"#6B7280",fontWeight:500}}>{p.market} · {p.cat}</span>
+          </div>
+          <div style={{fontSize:18,fontWeight:800,color:"#111827",marginBottom:6,lineHeight:1.35}}>{p.name}</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
+            <span style={{fontSize:24,fontWeight:900,color:"#FF5C38"}}>₩{p.price.toLocaleString()}</span>
+            <span style={{fontSize:13,color:"#D1D5DB",textDecoration:"line-through"}}>₩{p.orig.toLocaleString()}</span>
+            <span className="chip chip-red" style={{fontSize:11}}>↓{disc(p)}%</span>
+          </div>
+          <p style={{fontSize:13,color:"#6B7280",lineHeight:1.6,marginBottom:14}}>{p.desc}</p>
+          <div style={{background:"#FFF8EC",border:"1px solid #FFE5A8",borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8}}>
+              <span style={{fontWeight:700,color:"#111827"}}>👥 현재 <strong style={{color:"#FF5C38",fontSize:14}}>{p.rsv}명</strong> 예약 중</span>
+              <span style={{fontWeight:800,color:r<=20?"#DC2626":"#6B7280",fontSize:12}}>잔여 {r}개{r<=20?" ⚡":""}</span>
+            </div>
+            <div className="gauge" style={{height:8,marginBottom:6}}>
+              <div className="gauge-fill" style={{width:`${pc}%`,background:pc>=80?"linear-gradient(90deg,#DC2626,#FF5C38)":pc>=50?"linear-gradient(90deg,#FF9500,#FF5C38)":"linear-gradient(90deg,#1A6840,#2A9E5F)"}}/>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#9CA3AF"}}>
+              <span>0</span>
+              <span style={{fontWeight:700,color:"#FF9500"}}>📅 픽업: {p.date}</span>
+              <span>{p.total}개</span>
+            </div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",background:"#F9FAFB",borderRadius:14,border:"1px solid #F3F4F6"}}>
+            <span style={{fontSize:13,fontWeight:700}}>주문 수량</span>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <button onClick={()=>setQty(Math.max(1,qty-1))} style={{width:30,height:30,background:qty===1?"#F3F4F6":"#1A6840",borderRadius:50,border:"none",fontSize:16,color:qty===1?"#D1D5DB":"#fff",fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+              <span style={{fontSize:17,fontWeight:800,minWidth:24,textAlign:"center"}}>{qty}</span>
+              <button onClick={()=>setQty(Math.min(r,qty+1))} style={{width:30,height:30,background:"#1A6840",borderRadius:50,border:"none",fontSize:16,color:"#fff",fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+            </div>
+            <span style={{fontSize:15,fontWeight:800,color:"#FF5C38"}}>₩{(p.price*qty).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+      {/* 하단 고정 버튼 - flex column 방식 */}
+      <div style={{flexShrink:0,padding:"12px 16px 24px",background:"#fff",borderTop:"1px solid #F3F4F6"}}>
+        <button className="btn-p" onClick={()=>onGoToReserve(p,qty)}>예약하기 — ₩{(p.price*qty).toLocaleString()}</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── 예약 확인 화면 ── */
+function ReservationScreen({p,qty,onBack,onConfirm}){
+  const [selSlot,setSelSlot]=useState(null);
+  const [agreed,setAgreed]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const r=remain(p);
+  const slots=["12:00–13:00","13:00–14:00","14:00–15:00","15:00–16:00","16:00–17:00","17:00–18:00"];
+  // 예약 많은 슬롯 (FOMO)
+  const hotSlots={"13:00–14:00":18,"15:00–16:00":24,"16:00–17:00":11};
+
+  function handleConfirm(){
+    if(!selSlot||!agreed)return;
+    setLoading(true);
+    setTimeout(()=>{setLoading(false);onConfirm(p,qty,selSlot);},1400);
+  }
+
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      {/* 헤더 */}
+      <div style={{background:"#fff",borderBottom:"1px solid #F3F4F6",flexShrink:0}}>
+        <div className="sbar" style={{color:"#111827"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{padding:"0 16px 12px",display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={onBack} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#374151",padding:"0 4px 0 0"}}>←</button>
+          <div>
+            <div style={{fontSize:16,fontWeight:800,color:"#111827"}}>예약 확인</div>
+            <div style={{fontSize:11,color:"#9CA3AF",marginTop:1}}>픽업 시간대를 선택해 주세요</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 스크롤 본문 */}
+      <div style={{flex:1,overflowY:"auto",background:"#F4F6F4",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
+
+        {/* 상품 요약 */}
+        <div className="card" style={{padding:"14px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#9CA3AF",marginBottom:8,letterSpacing:.3}}>주문 상품</div>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+            <div style={{width:52,height:52,background:"#F0FFF4",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{p.img}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:3}}>{p.name}</div>
+              <div style={{fontSize:11,color:"#9CA3AF",marginBottom:4}}>{p.market} · 픽업 {p.date}</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:15,fontWeight:800,color:"#FF5C38"}}>₩{p.price.toLocaleString()}</span>
+                <span style={{fontSize:11,color:"#D1D5DB"}}>× {qty}개</span>
+                <span style={{fontSize:15,fontWeight:800,color:"#111827",marginLeft:"auto"}}>= ₩{(p.price*qty).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 픽업 시간대 선택 */}
+        <div className="card" style={{padding:"14px"}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#111827",marginBottom:3}}>⏰ 픽업 시간대 선택 <span style={{color:"#FF5C38"}}>*</span></div>
+          <div style={{fontSize:11,color:"#9CA3AF",marginBottom:10}}>원하는 픽업 시간대를 선택해 주세요</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+            {slots.map(s=>{
+              const hot=hotSlots[s];
+              const isSel=selSlot===s;
+              return(
+                <button key={s} onClick={()=>setSelSlot(s)} style={{
+                  padding:"10px 8px",borderRadius:10,border:isSel?"2px solid #1A6840":"1.5px solid #E5E7EB",
+                  background:isSel?"#EAF7F0":"#fff",cursor:"pointer",position:"relative",
+                  transition:"all .15s"
+                }}>
+                  <div style={{fontSize:12,fontWeight:700,color:isSel?"#1A6840":"#374151"}}>{s}</div>
+                  {hot&&<div style={{fontSize:9,fontWeight:700,color:isSel?"#1A6840":"#9CA3AF",marginTop:2}}>👥 {hot}명 예약 중</div>}
+                  {isSel&&<div style={{position:"absolute",top:5,right:7,fontSize:11,color:"#1A6840"}}>✓</div>}
+                </button>
+              );
+            })}
+          </div>
+          {!selSlot&&<div style={{fontSize:11,color:"#FF9500",marginTop:8,fontWeight:600}}>⚠️ 시간대를 선택해야 예약이 가능합니다</div>}
+        </div>
+
+        {/* 결제 안내 */}
+        <div className="card" style={{padding:"14px"}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#111827",marginBottom:8}}>💳 결제 안내</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {[
+              ["결제 방식","현장 직접 결제 (카드·현금)"],
+              ["결제 시점","픽업 당일 상품 수령 시"],
+              ["예약금","없음 (무보증 예약)"],
+            ].map(([k,v],i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<2?"1px solid #F9FAFB":"none"}}>
+                <span style={{fontSize:11,color:"#9CA3AF",fontWeight:600}}>{k}</span>
+                <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:10,background:"#EAF7F0",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#1A6840",fontWeight:600}}>
+            ✅ 예약 후 현장에서 QR 코드로 빠르게 수령
+          </div>
+        </div>
+
+        {/* 취소 및 노쇼 정책 */}
+        <div style={{background:"#FFF8EC",border:"1px solid #FFE5A8",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#FF9500",marginBottom:6}}>📋 취소 · 노쇼 정책</div>
+          {[
+            "픽업일 전날까지 앱에서 무료 취소 가능",
+            "픽업일 당일 취소 시 노쇼 0.5회 카운트",
+            "미픽업(노쇼) 시 1회 기록",
+            "누적 3회 이상 시 예약 기능 30일 정지",
+          ].map((t,i)=>(
+            <div key={i} style={{fontSize:11,color:"#6B7280",marginTop:4,display:"flex",gap:5}}>
+              <span style={{color:"#FFB347",flexShrink:0}}>·</span><span>{t}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 동의 체크박스 */}
+        <div className="card" style={{padding:"14px"}}>
+          <button onClick={()=>setAgreed(a=>!a)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,padding:0,textAlign:"left"}}>
+            <div style={{width:20,height:20,borderRadius:5,border:agreed?"none":"2px solid #D1D5DB",background:agreed?"#1A6840":"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .15s"}}>
+              {agreed&&<span style={{fontSize:12,color:"#fff",fontWeight:800}}>✓</span>}
+            </div>
+            <div style={{fontSize:12,color:"#374151",lineHeight:1.55}}>
+              위 취소·노쇼 정책을 확인하였으며, 예약 시 해당 정책에 동의합니다.
+              <span style={{color:"#1A6840",fontWeight:700}}> (필수)</span>
+            </div>
+          </button>
+        </div>
+
+      </div>
+
+      {/* 하단 CTA */}
+      <div style={{flexShrink:0,padding:"12px 16px 24px",background:"#fff",borderTop:"1px solid #F3F4F6"}}>
+        {/* 가격 요약 */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,padding:"0 2px"}}>
+          <span style={{fontSize:12,color:"#6B7280",fontWeight:600}}>최종 결제 금액 (현장)</span>
+          <span style={{fontSize:17,fontWeight:900,color:"#FF5C38"}}>₩{(p.price*qty).toLocaleString()}</span>
+        </div>
+        <button
+          onClick={handleConfirm}
+          disabled={!selSlot||!agreed||loading}
+          style={{
+            width:"100%",padding:"16px",border:"none",borderRadius:14,fontSize:15,fontWeight:800,
+            background:selSlot&&agreed?"#1A6840":"#E5E7EB",
+            color:selSlot&&agreed?"#fff":"#9CA3AF",
+            cursor:selSlot&&agreed?"pointer":"not-allowed",
+            transition:"all .2s",position:"relative",overflow:"hidden"
+          }}
+        >
+          {loading
+            ? <span className="pulse">예약 처리 중...</span>
+            : selSlot&&agreed
+              ? `예약 확정하기 — ${selSlot}`
+              : selSlot?"약관에 동의해 주세요":"시간대를 먼저 선택해 주세요"
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── QR 픽업권 ── */
+function QRScreen({p,qty,slot,onHome,reservationCode}){
+  const code=reservationCode||`OMM-${Math.floor(2300+Math.random()*100)}`;
+  return(
+    <div className="slide-up" style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      {/* 상단 헤더 */}
+      <div style={{background:"linear-gradient(160deg,#1A6840,#2A9E5F)",padding:"0 18px 24px",flexShrink:0}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.7)"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:40,marginBottom:8}}>✅</div>
+          <div style={{fontSize:18,fontWeight:800,color:"#fff"}}>예약 완료!</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginTop:4}}>방문 시 아래 화면을 직원에게 보여주세요</div>
+        </div>
+      </div>
+      {/* 스크롤 영역 */}
+      <div style={{flex:1,overflowY:"auto",padding:"16px 16px 8px",background:"#F4F6F4",display:"flex",flexDirection:"column",gap:12}}>
+        <div className="card" style={{padding:"14px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#9CA3AF",marginBottom:6}}>예약 상품</div>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <div style={{fontSize:32}}>{p.img}</div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>{p.name}</div>
+              <div style={{fontSize:12,color:"#6B7280",marginTop:2}}>수량 {qty}개 · 픽업 {p.date}</div>
+              {slot&&<div style={{fontSize:12,color:"#1A6840",fontWeight:700,marginTop:3}}>⏰ {slot}</div>}
+              <div style={{fontSize:14,fontWeight:800,color:"#FF5C38",marginTop:3}}>₩{(p.price*qty).toLocaleString()}</div>
+            </div>
+          </div>
+        </div>
+        <div className="card" style={{padding:"16px",textAlign:"center"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#9CA3AF",marginBottom:4}}>예약번호</div>
+          <div style={{fontSize:18,fontWeight:900,color:"#1A6840",marginBottom:12,letterSpacing:2}}>{code}</div>
+          <div style={{display:"inline-block",padding:12,border:"2px solid #EAF7F0",borderRadius:16,background:"#FAFFFE"}}>
+            <svg width="130" height="130" viewBox="0 0 148 148">
+              {[0,1,2,3,4,5,6].map(r=>[0,1,2,3,4,5,6].map(c=>{
+                const finder=(r<3&&c<3)||(r<3&&c>3)||(r>3&&c<3);
+                const skip=(r===3||c===3)&&!finder;
+                if(skip)return null;
+                const v=((r*7+c)*13+r*c*7)%3===0||finder;
+                if(!v)return null;
+                return <rect key={`${r}-${c}`} x={6+c*20} y={6+r*20} width={16} height={16} rx={3} fill="#1A6840"/>;
+              }))}
+              {[0,1,2,3,4].map(i=><rect key={`d${i}`} x={62+(i%3)*8} y={62+Math.floor(i/3)*8} width={6} height={6} rx={1} fill="#2A9E5F"/>)}
+            </svg>
+          </div>
+          <div style={{fontSize:11,color:"#9CA3AF",marginTop:10}}>직원이 카메라로 스캔합니다</div>
+        </div>
+        <div style={{background:"#FFF8EC",border:"1px solid #FFE5A8",borderRadius:14,padding:"12px 14px"}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#FF9500",marginBottom:6}}>📋 픽업 안내</div>
+          {["픽업일: "+p.date,"현장 결제 후 상품 수령","미픽업 시 노쇼 1회 기록","3회 누적 시 예약 제한"].map((t,i)=>(
+            <div key={i} style={{fontSize:11,color:"#6B7280",marginTop:3}}>· {t}</div>
+          ))}
+        </div>
+      </div>
+      {/* 하단 고정 버튼 */}
+      <div style={{flexShrink:0,padding:"12px 16px 24px",background:"#fff",borderTop:"1px solid #F3F4F6"}}>
+        <button className="btn-outline" onClick={onHome}>홈으로 돌아가기</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── 찜 목록 ── */
+function LikesScreen({onProduct}){
+  const [likes,setLikes]=useState(INIT_LIKES);
+  return(
+    <div className="slide-up">
+      <div className="sbar" style={{background:"#fff",color:"#111827"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+      <div style={{padding:"4px 16px 12px",background:"#fff",borderBottom:"1px solid #F3F4F6"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#111827"}}>찜 목록</div>
+        <div style={{fontSize:12,color:"#9CA3AF",marginTop:2}}>{likes.length}개 저장됨</div>
+      </div>
+      <div style={{background:"#F4F6F4",padding:"14px 16px 0"}}>
+        {likes.length===0?(
+          <div style={{textAlign:"center",padding:"60px 0"}}>
+            <div style={{fontSize:48,marginBottom:12}}>🤍</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#9CA3AF"}}>찜한 상품이 없어요</div>
+          </div>
+        ):likes.map(l=>(
+          <div key={l.id} className="pcard" style={{marginBottom:10}}>
+            <div style={{display:"flex",gap:12,padding:"12px 14px",alignItems:"center"}}>
+              <div style={{width:52,height:52,background:"#F0FFF4",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"pointer"}} onClick={()=>onProduct(ALL_PRODUCTS.find(p=>p.id===l.id)||ALL_PRODUCTS[0])}>{l.img}</div>
+              <div style={{flex:1,cursor:"pointer"}} onClick={()=>onProduct(ALL_PRODUCTS.find(p=>p.id===l.id)||ALL_PRODUCTS[0])}>
+                <div style={{fontSize:11,color:"#9CA3AF",fontWeight:500,marginBottom:3}}>{l.market}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:3}}>{l.name}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:14,fontWeight:800,color:"#FF5C38"}}>₩{l.price.toLocaleString()}</span>
+                  {l.dday<=2&&<span className="chip chip-red pulse" style={{fontSize:10,padding:"2px 6px"}}>D-{l.dday}</span>}
+                </div>
+              </div>
+              <button onClick={()=>setLikes(ls=>ls.filter(x=>x.id!==l.id))} style={{background:"#FEE2E2",border:"none",borderRadius:50,width:32,height:32,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>❤️</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{height:16,background:"#F4F6F4"}}/>
+    </div>
+  );
+}
+
+/* ── MY ── */
+/* ── 예약 상세 ── */
+function ReservationDetailScreen({r,onBack}){
+  const [cancelled,setCancelled]=useState(false);
+  const isActive=r.status==="예약완료"&&!cancelled;
+  const isDone=r.status==="픽업완료";
+  const code=r.id;
+
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      {/* 헤더 */}
+      <div style={{background:isDone?"linear-gradient(145deg,#064E3B,#065F46)":cancelled?"linear-gradient(145deg,#4B5563,#6B7280)":"linear-gradient(145deg,#0f4d2e,#1A6840)",flexShrink:0}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.7)"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{padding:"0 16px 20px"}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:20,padding:"5px 14px",color:"rgba(255,255,255,.9)",fontSize:12,fontWeight:600,marginBottom:14}}>← 예약 내역</button>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+            <div style={{width:52,height:52,background:"rgba(255,255,255,.18)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,border:"1.5px solid rgba(255,255,255,.2)"}}>{r.img}</div>
+            <div>
+              <div style={{fontSize:16,fontWeight:800,color:"#fff",marginBottom:3}}>{r.name}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.7)"}}>{r.market}</div>
+            </div>
+          </div>
+          {/* 상태 배지 */}
+          <div style={{marginTop:12,display:"flex",gap:6,alignItems:"center"}}>
+            <span style={{padding:"5px 14px",borderRadius:50,fontSize:12,fontWeight:800,
+              background:isDone?"rgba(255,255,255,.2)":cancelled?"rgba(255,255,255,.15)":"#FF9500",
+              color:"#fff",border:isDone||cancelled?"1px solid rgba(255,255,255,.25)":"none"
+            }}>{cancelled?"취소 완료":r.status}</span>
+            <span style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>예약번호 {r.id}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 본문 스크롤 */}
+      <div style={{flex:1,overflowY:"auto",background:"#F4F6F4",padding:"14px 16px",display:"flex",flexDirection:"column",gap:11}}>
+
+        {/* 예약 정보 요약 */}
+        <div className="card" style={{padding:"16px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",marginBottom:10,letterSpacing:.3}}>예약 정보</div>
+          {[
+            ["상품명",r.name],
+            ["수량",`${r.qty}개`],
+            ["픽업일",r.date],
+            ["픽업 시간",r.slot],
+            ["마켓",r.market],
+            ["결제 금액","₩"+(r.price*r.qty).toLocaleString()+" (현장)"],
+          ].map(([k,v],i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:i<5?"1px solid #F9FAFB":"none",alignItems:"center"}}>
+              <span style={{fontSize:11,color:"#9CA3AF",fontWeight:600}}>{k}</span>
+              <span style={{fontSize:12,fontWeight:700,color:k==="결제 금액"?"#FF5C38":"#374151"}}>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 예약완료: QR 코드 */}
+        {isActive&&(
+          <div className="card" style={{padding:"18px",textAlign:"center"}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#111827",marginBottom:3}}>픽업 QR 코드</div>
+            <div style={{fontSize:11,color:"#9CA3AF",marginBottom:14}}>방문 시 직원에게 보여주세요</div>
+            <div style={{display:"inline-block",padding:12,border:"2px solid #EAF7F0",borderRadius:16,background:"#FAFFFE",marginBottom:12}}>
+              <svg width="130" height="130" viewBox="0 0 148 148">
+                {[0,1,2,3,4,5,6].map(row=>[0,1,2,3,4,5,6].map(col=>{
+                  const finder=(row<3&&col<3)||(row<3&&col>3)||(row>3&&col<3);
+                  const skip=(row===3||col===3)&&!finder;
+                  if(skip)return null;
+                  const v=((row*7+col)*13+row*col*7)%3===0||finder;
+                  if(!v)return null;
+                  return <rect key={`${row}-${col}`} x={6+col*20} y={6+row*20} width={16} height={16} rx={3} fill="#1A6840"/>;
+                }))}
+                {[0,1,2,3,4].map(i=><rect key={`d${i}`} x={62+(i%3)*8} y={62+Math.floor(i/3)*8} width={6} height={6} rx={1} fill="#2A9E5F"/>)}
+              </svg>
+            </div>
+            <div style={{fontSize:13,fontWeight:900,color:"#1A6840",letterSpacing:2,marginBottom:4}}>{code}</div>
+            <div style={{fontSize:10,color:"#9CA3AF"}}>직원이 카메라로 스캔합니다</div>
+          </div>
+        )}
+
+        {/* 픽업완료: 영수증 스타일 */}
+        {isDone&&(
+          <div className="card" style={{padding:"16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:800,color:"#111827"}}>픽업 완료 영수증</div>
+              <span style={{fontSize:20}}>🧾</span>
+            </div>
+            <div style={{borderTop:"1.5px dashed #E5E7EB",borderBottom:"1.5px dashed #E5E7EB",padding:"10px 0",margin:"8px 0",display:"flex",flexDirection:"column",gap:6}}>
+              {[
+                ["예약일",r.resvedAt],
+                ["픽업 완료",r.paidAt||"-"],
+                ["픽업 시간대",r.slot],
+              ].map(([k,v],i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between"}}>
+                  <span style={{fontSize:11,color:"#9CA3AF"}}>{k}</span>
+                  <span style={{fontSize:11,fontWeight:600,color:"#374151"}}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4}}>
+              <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>결제 금액</span>
+              <span style={{fontSize:17,fontWeight:900,color:"#1A6840"}}>₩{(r.price*r.qty).toLocaleString()}</span>
+            </div>
+            <div style={{marginTop:12,background:"#D1FAE5",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#065F46",fontWeight:700,textAlign:"center"}}>
+              ✅ 정상 픽업 완료 — 노쇼 기록 없음
+            </div>
+          </div>
+        )}
+
+        {/* 취소완료 */}
+        {cancelled&&(
+          <div style={{background:"#F9FAFB",border:"1.5px dashed #D1D5DB",borderRadius:14,padding:"20px",textAlign:"center"}}>
+            <div style={{fontSize:36,marginBottom:8}}>🚫</div>
+            <div style={{fontSize:13,fontWeight:800,color:"#6B7280",marginBottom:4}}>예약이 취소되었습니다</div>
+            <div style={{fontSize:11,color:"#9CA3AF"}}>예약금이 없으므로 별도 환불은 없습니다</div>
+          </div>
+        )}
+
+        {/* 타임라인 */}
+        <div className="card" style={{padding:"14px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",marginBottom:10,letterSpacing:.3}}>진행 현황</div>
+          {[
+            {label:"예약 접수",time:r.resvedAt,done:true},
+            {label:"픽업 대기",time:r.date+" "+r.slot,done:isDone||isActive},
+            {label:"픽업 완료",time:r.paidAt||"-",done:isDone},
+          ].map((step,i)=>(
+            <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<2?12:0}}>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:20}}>
+                <div style={{width:18,height:18,borderRadius:50,
+                  background:step.done?(cancelled&&i>0?"#D1D5DB":"#1A6840"):"#E5E7EB",
+                  display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+                }}>
+                  {step.done&&!cancelled&&<span style={{fontSize:9,color:"#fff",fontWeight:800}}>✓</span>}
+                  {step.done&&cancelled&&i>0&&<span style={{fontSize:9,color:"#fff"}}>—</span>}
+                </div>
+                {i<2&&<div style={{width:1.5,height:16,background:step.done&&!cancelled?"#D1FAE5":"#F3F4F6",marginTop:3}}/>}
+              </div>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:step.done&&!cancelled?"#111827":"#9CA3AF"}}>{step.label}</div>
+                <div style={{fontSize:10,color:"#9CA3AF",marginTop:1}}>{step.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 위치 안내 */}
+        {isActive&&(
+          <div className="card" style={{padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",marginBottom:8,letterSpacing:.3}}>픽업 장소</div>
+            <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>{r.market}</div>
+            <div style={{fontSize:11,color:"#9CA3AF",marginBottom:8}}>{r.addr}</div>
+            <button style={{background:"#EAF7F0",border:"none",borderRadius:8,padding:"7px 14px",fontSize:11,fontWeight:700,color:"#1A6840",cursor:"pointer"}}>🗺️ 길찾기</button>
+          </div>
+        )}
+
+        {/* 노쇼 안내 (예약완료만) */}
+        {isActive&&(
+          <div style={{background:"#FFF8EC",border:"1px solid #FFE5A8",borderRadius:12,padding:"11px 13px"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#FF9500",marginBottom:5}}>⚠️ 픽업 미방문 시 노쇼 처리</div>
+            <div style={{fontSize:11,color:"#6B7280",lineHeight:1.6}}>픽업일 당일 방문하지 않으시면 노쇼 1회가 기록됩니다. 취소는 픽업 전날까지 가능합니다.</div>
+          </div>
+        )}
+
+      </div>
+
+      {/* 하단 버튼 */}
+      {!cancelled&&(
+        <div style={{flexShrink:0,padding:"12px 16px 24px",background:"#fff",borderTop:"1px solid #F3F4F6",display:"flex",gap:8}}>
+          {isActive?(
+            <>
+              <button onClick={()=>setCancelled(true)} style={{flex:1,padding:"13px",border:"1.5px solid #FCA5A5",background:"#fff",borderRadius:12,fontSize:13,fontWeight:700,color:"#EF4444",cursor:"pointer"}}>예약 취소</button>
+              <button style={{flex:2,padding:"13px",background:"#1A6840",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:800,cursor:"pointer"}}>📋 QR 크게 보기</button>
+            </>
+          ):(
+            <button style={{width:"100%",padding:"14px",background:"#EAF7F0",color:"#1A6840",border:"none",borderRadius:12,fontSize:13,fontWeight:800,cursor:"pointer"}}>🔁 같은 마켓 재예약하기</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MyScreen({onResvDetail}){
+  return(
+    <div className="slide-up">
+      <div style={{background:"linear-gradient(160deg,#1A6840,#2A9E5F)",padding:"0 0 20px"}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.7)"}}><span style={{fontWeight:700}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{padding:"0 18px",display:"flex",gap:14,alignItems:"center"}}>
+          <div style={{width:56,height:56,background:"rgba(255,255,255,.25)",borderRadius:50,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>👩</div>
+          <div>
+            <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>김지연 님</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.75)",marginTop:2}}>등급: 단골 고객 ⭐⭐</div>
+          </div>
+          <div style={{marginLeft:"auto",background:"rgba(255,255,255,.15)",borderRadius:10,padding:"6px 12px",textAlign:"center"}}>
+            <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>12</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.7)"}}>총 구매</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,padding:"14px 18px 0"}}>
+          {[{l:"총 절약",v:"₩87,400"},{l:"노쇼",v:"0회"},{l:"방문 마켓",v:"3곳"}].map((s,i)=>(
+            <div key={i} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:12,padding:"10px 8px",textAlign:"center"}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#fff"}}>{s.v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.65)",marginTop:2}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{background:"#F4F6F4",padding:"16px 16px 0"}}>
+        <div style={{fontSize:14,fontWeight:800,color:"#111827",marginBottom:10}}>📋 예약 내역</div>
+        {MY_RESERVATIONS.map((r,i)=>(
+          <div key={i} className="card" onClick={()=>onResvDetail&&onResvDetail(r)}
+            style={{marginBottom:10,padding:"14px 16px",display:"flex",gap:12,alignItems:"center",cursor:"pointer",transition:"transform .1s"}}
+          >
+            <div style={{width:46,height:46,background:r.status==="예약완료"?"#FFF8EC":"#F0FFF4",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,border:r.status==="예약완료"?"1.5px solid #FFE5A8":"none"}}>{r.img}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{r.name}</div>
+              <div style={{fontSize:11,color:"#9CA3AF"}}>{r.market} · {r.date} {r.slot}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
+                <span style={{fontSize:13,fontWeight:800,color:"#FF5C38"}}>₩{r.price.toLocaleString()}</span>
+                {r.qty>1&&<span style={{fontSize:11,color:"#9CA3AF"}}>× {r.qty}개</span>}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
+              <span className={`chip ${r.status==="픽업완료"?"chip-green":"chip-orange"}`} style={{fontSize:10,padding:"3px 9px"}}>{r.status}</span>
+              <span style={{fontSize:11,color:"#D1D5DB"}}>›</span>
+            </div>
+          </div>
+        ))}
+        <div style={{marginTop:6,marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:800,color:"#111827",marginBottom:10}}>⚙️ 설정</div>
+          {["알림 설정","즐겨찾기 마켓","이용 약관","고객센터"].map((s,i)=>(
+            <div key={i} className="card" style={{padding:"14px 16px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+              <span style={{fontSize:13,fontWeight:600,color:"#374151"}}>{s}</span>
+              <span style={{color:"#D1D5DB",fontSize:16}}>›</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 소비자 앱 컨테이너 ── */
+function ConsumerApp(){
+  const store = useContext(SharedStoreContext);
+  const [storeState, setStoreState] = useState(store ? store.getState() : null);
+  
+  useEffect(() => {
+    if (store) {
+      return store.subscribe(setStoreState);
+    }
+  }, [store]);
+
+  const [screen,setScreen]=useState("explore");
+  const [tab,setTab]=useState("explore");
+  const [selMarket,setSelMarket]=useState(null);
+  const [selProduct,setSelProduct]=useState(null);
+  const [qty,setQty]=useState(1);
+  const [selSlot,setSelSlot]=useState(null);
+  const [selResv,setSelResv]=useState(null);
+  const [lastResvCode,setLastResvCode]=useState(null);
+
+  function goTab(t){setTab(t);setScreen(t);}
+  function goMarket(m){setSelMarket(m);setScreen("market");}
+  function goProduct(p){setSelProduct(p);setScreen("product");}
+  function goToReserve(p,q){setSelProduct(p);setQty(q);setSelSlot(null);setScreen("reservation");}
+  function doConfirm(p,q,slot){
+    setSelSlot(slot);
+    // SharedStore에 예약 추가
+    if (store) {
+      const newResv = store.addReservation(p, q, slot);
+      setLastResvCode(newResv.id);
+    }
+    setScreen("qr");
+  }
+  function goResvDetail(r){setSelResv(r);setScreen("resvDetail");}
+  function goHome(){setTab("explore");setScreen("explore");setSelMarket(null);setSelProduct(null);setSelSlot(null);setLastResvCode(null);}
+
+  const showNav=!["product","reservation","qr","resvDetail"].includes(screen);
+  const isFullScreen=["product","reservation","qr","resvDetail"].includes(screen);
+  const TABS=[
+    {k:"explore",ic:"🗺️",lb:"탐색"},
+    {k:"feed",ic:"📣",lb:"피드"},
+    {k:"likes",ic:"❤️",lb:"찜"},
+    {k:"my",ic:"👤",lb:"MY"},
+  ];
+
+  const renderScreen=()=>{
+    switch(screen){
+      case "explore": return <ExploreScreen onMarket={goMarket} onFeed={()=>goTab("feed")}/>;
+      case "feed":    return <FeedScreen onProduct={goProduct}/>;
+      case "likes":   return <LikesScreen onProduct={goProduct}/>;
+      case "my":      return <MyScreen onResvDetail={goResvDetail}/>;
+      case "market":  return <MarketScreen market={selMarket} onBack={()=>setScreen(tab==="feed"?"feed":"explore")} onProduct={goProduct}/>;
+      case "product":     return <ProductScreen p={selProduct} onBack={()=>selMarket?setScreen("market"):setScreen(tab)} onGoToReserve={goToReserve}/>;
+      case "reservation": return <ReservationScreen p={selProduct} qty={qty} onBack={()=>setScreen("product")} onConfirm={doConfirm}/>;
+      case "qr":          return <QRScreen p={selProduct} qty={qty} slot={selSlot} onHome={goHome} reservationCode={lastResvCode}/>;
+      case "resvDetail":  return <ReservationDetailScreen r={selResv} onBack={()=>setScreen("my")}/>;
+      default: return null;
+    }
+  };
+
+  return(
+    <div className="phone-inner">
+      {isFullScreen
+        ? <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>{renderScreen()}</div>
+        : <div className="screen-scroll">{renderScreen()}</div>
+      }
+      {showNav&&(
+        <div className="btab">
+          {TABS.map(({k,ic,lb})=>(
+            <button key={k} className={`btab-item${tab===k?" on":""}`} onClick={()=>goTab(k)}>
+              <div className="btab-icon-wrap">
+                <span className="btab-icon">{ic}</span>
+              </div>
+              <span className="btab-label">{lb}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 사장님 대시보드 ── */
+function QRModal({r,onClose}){
+  const [done,setDone]=useState(false);
+  return(
+    <div className="modal-ov" onClick={onClose}>
+      <div className="modal-box" onClick={e=>e.stopPropagation()}>
+        {!done?(
+          <>
+            <div style={{fontSize:40,marginBottom:12}}>📱</div>
+            <div style={{fontSize:18,fontWeight:800,color:"#111827",marginBottom:4}}>QR 스캔 확인</div>
+            <div style={{fontSize:12,color:"#9CA3AF",marginBottom:16}}>고객 앱 QR이 일치합니다</div>
+            <div style={{background:"#F9FAFB",borderRadius:12,padding:"14px",marginBottom:16,textAlign:"left",border:"1px solid #F3F4F6"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:6}}>{r.id}</div>
+              {[["👤",r.user],["🛍️",r.product+" × "+r.qty+"개"],["💰","₩"+r.amount.toLocaleString()]].map(([ic,tx],i)=>(
+                <div key={i} style={{fontSize:13,color:"#374151",marginBottom:3}}>{ic} {tx}</div>
+              ))}
+            </div>
+            <div style={{background:"#D1FAE5",border:"1px solid #A7F3D0",borderRadius:10,padding:10,marginBottom:20,fontSize:12,color:"#065F46",fontWeight:600}}>✅ 예약 정보 일치 확인</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={onClose} style={{flex:1,padding:"12px",border:"1.5px solid #E5E7EB",background:"#fff",borderRadius:10,fontSize:13,cursor:"pointer",fontWeight:600,color:"#6B7280"}}>취소</button>
+              <button onClick={()=>setDone(true)} style={{flex:2,padding:"12px",background:"#1A6840",color:"#fff",border:"none",borderRadius:10,fontSize:13,cursor:"pointer",fontWeight:800}}>픽업 완료 처리</button>
+            </div>
+          </>
+        ):(
+          <>
+            <div style={{fontSize:52,marginBottom:12}}>🎉</div>
+            <div style={{fontSize:18,fontWeight:800,color:"#111827",marginBottom:4}}>픽업 완료!</div>
+            <div style={{fontSize:13,color:"#6B7280",marginBottom:20}}>{r.user}님 · {r.product}</div>
+            <button onClick={onClose} style={{width:"100%",padding:"13px",background:"#1A6840",color:"#fff",border:"none",borderRadius:10,fontSize:14,cursor:"pointer",fontWeight:800}}>확인</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DashHome(){
+  const WEEK=[{d:"2/24",v:820000},{d:"2/25",v:1140000},{d:"2/26",v:950000},{d:"2/27",v:1380000},{d:"2/28",v:720000},{d:"3/1",v:1210000},{d:"3/2",v:960000}];
+  const maxV=Math.max(...WEEK.map(w=>w.v));
+  const ACTIONS=[{ic:"➕",lb:"상품 등록",color:"#1A6840"},{ic:"📣",lb:"공지 발송",color:"#3B82F6"},{ic:"📷",lb:"QR 스캔",color:"#FF5C38"},{ic:"📊",lb:"리포트",color:"#8B5CF6"}];
+  const TIMELINE=[
+    {time:"09:15",type:"예약",msg:"김지연님 — 은갈치 5마리 예약",color:"#1A6840"},
+    {time:"10:02",type:"예약",msg:"박민준님 — 달걀 30구 × 2 예약",color:"#1A6840"},
+    {time:"10:47",type:"완료",msg:"이수정님 — 은갈치 픽업 완료",color:"#3B82F6"},
+    {time:"11:23",type:"노쇼",msg:"홍성민님 — 달걀 노쇼 처리됨",color:"#DC2626"},
+    {time:"12:05",type:"마감",msg:"국산 달걀 30구 — 잔여 5개 마감임박",color:"#FF9500"},
+  ];
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+        <div><div className="dm-title">대시보드</div><div className="dm-sub">2026년 3월 2일(월) · 온맘마켓 일산점</div></div>
+        <div style={{background:"#D1FAE5",borderRadius:10,padding:"6px 14px",fontSize:12,fontWeight:700,color:"#065F46",border:"1px solid #A7F3D0"}}>● 오늘 운영 중</div>
+      </div>
+
+      {/* KPI */}
+      <div className="kpi-grid" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
+        {[
+          {l:"오늘 예약",v:"47건",s:"↑ 12% vs 지난주",c:"#1A6840",ic:"📋"},
+          {l:"처리 대기",v:"31건",s:"오늘 픽업 예정",c:"#FF5C38",ic:"⏳"},
+          {l:"이번 주 매출",v:"₩7.2M",s:"↑ 8% vs 지난주",c:"#1D4ED8",ic:"💰"},
+          {l:"이번 주 노쇼",v:"2건",s:"노쇼율 1.2%",c:"#DC2626",ic:"⚠️"},
+        ].map((k,i)=>(
+          <div key={i} className="kpi-c" style={{position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:14,right:16,fontSize:22,opacity:.12}}>{k.ic}</div>
+            <div className="kpi-lbl">{k.l}</div>
+            <div className="kpi-val" style={{color:k.c}}>{k.v}</div>
+            <div className="kpi-sub" style={{color:i===3?"#DC2626":k.c.includes("DC")?"#DC2626":"#2A9E5F"}}>{k.s}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+        {/* 주간 매출 차트 */}
+        <div className="dt-wrap" style={{padding:"18px 20px"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:4}}>📈 주간 매출 추이</div>
+          <div style={{fontSize:11,color:"#9CA3AF",marginBottom:16}}>최근 7일 · 단위: 만원</div>
+          <div style={{display:"flex",alignItems:"flex-end",gap:6,height:80}}>
+            {WEEK.map((w,i)=>{
+              const h=Math.round((w.v/maxV)*72);
+              const isToday=i===6;
+              return(
+                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                  <div style={{fontSize:9,fontWeight:700,color:isToday?"#1A6840":"#9CA3AF"}}>{Math.round(w.v/10000)}만</div>
+                  <div style={{width:"100%",height:h,borderRadius:"4px 4px 0 0",background:isToday?"#1A6840":"#BBF7D0",transition:"height .3s"}}/>
+                  <div style={{fontSize:9,color:isToday?"#1A6840":"#9CA3AF",fontWeight:isToday?800:500}}>{w.d.slice(2)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 빠른 액션 */}
+        <div className="dt-wrap" style={{padding:"18px 20px"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:4}}>⚡ 빠른 액션</div>
+          <div style={{fontSize:11,color:"#9CA3AF",marginBottom:14}}>자주 쓰는 기능 바로가기</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {ACTIONS.map((a,i)=>(
+              <button key={i} style={{padding:"12px 8px",border:"1.5px solid #F3F4F6",borderRadius:12,background:"#FAFAFA",cursor:"pointer",display:"flex",alignItems:"center",gap:8,transition:"all .15s",fontFamily:"inherit"}}>
+                <div style={{width:32,height:32,borderRadius:8,background:a.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{a.ic}</div>
+                <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>{a.lb}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+        {/* 오늘 픽업 스케줄 */}
+        <div className="dt-wrap">
+          <div className="dt-hd"><div className="dt-title">📅 오늘 픽업 스케줄</div><span style={{fontSize:11,color:"#9CA3AF"}}>3/2</span></div>
+          {[{t:"13:00–14:00",nm:"은갈치 5마리",cnt:14,done:12},{t:"15:00–16:00",nm:"은갈치 5마리",cnt:20,done:18},{t:"16:00–17:00",nm:"유기농 달걀",cnt:13,done:13}].map((s,i)=>(
+            <div key={i} style={{padding:"12px 18px",borderBottom:i<2?"1px solid #F9FAFB":"none"}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                <span style={{fontSize:11,fontWeight:700,color:"#9CA3AF"}}>{s.t}</span>
+                <span style={{fontSize:11,fontWeight:700,color:s.done===s.cnt?"#1A6840":"#FF9500"}}>{s.done}/{s.cnt} {s.done===s.cnt?"✓":""}</span>
+              </div>
+              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:5}}>{s.nm}</div>
+              <div className="gauge" style={{height:5}}>
+                <div className="gauge-fill" style={{width:`${Math.round(s.done/s.cnt*100)}%`,background:s.done===s.cnt?"#2A9E5F":"#FF9500"}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 실시간 활동 타임라인 */}
+        <div className="dt-wrap" style={{padding:"0 0 8px"}}>
+          <div className="dt-hd"><div className="dt-title">🔴 실시간 활동</div><span style={{fontSize:11,fontWeight:700,color:"#2A9E5F"}} className="pulse">LIVE</span></div>
+          <div style={{padding:"8px 16px"}}>
+            {TIMELINE.map((t,i)=>(
+              <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"7px 0",borderBottom:i<TIMELINE.length-1?"1px solid #F9FAFB":"none"}}>
+                <span style={{fontSize:10,fontWeight:700,color:"#9CA3AF",width:38,flexShrink:0,marginTop:1}}>{t.time}</span>
+                <div style={{width:6,height:6,borderRadius:50,background:t.color,flexShrink:0,marginTop:5}}/>
+                <div style={{flex:1}}>
+                  <span style={{fontSize:10,fontWeight:800,padding:"1px 6px",borderRadius:50,marginRight:5,background:t.color+"18",color:t.color}}>{t.type}</span>
+                  <span style={{fontSize:11,color:"#374151"}}>{t.msg}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 상품별 성과 */}
+      <div className="dt-wrap" style={{marginBottom:0}}>
+        <div className="dt-hd"><div className="dt-title">📦 상품별 예약 현황</div><span style={{fontSize:11,color:"#9CA3AF"}}>이번 행사 기준</span></div>
+        <table>
+          <thead><tr><th>상품명</th><th>픽업일</th><th>예약/한도</th><th>매출</th><th>달성률</th><th>상태</th></tr></thead>
+          <tbody>
+            {ALL_PRODUCTS.filter(p=>p.mid===1).map(p=>{
+              const pc=pct(p);
+              const revenue=(p.price*p.rsv).toLocaleString();
+              const status=pc>=90?"마감임박":pc>=50?"진행중":"모집중";
+              return(
+                <tr key={p.id}>
+                  <td><span style={{fontWeight:600,color:"#111827"}}>{p.name}</span></td>
+                  <td style={{color:"#9CA3AF",fontSize:11}}>{p.date}</td>
+                  <td><span style={{fontWeight:700,color:"#1A6840"}}>{p.rsv}</span><span style={{color:"#9CA3AF",fontSize:11}}>/{p.total}</span></td>
+                  <td style={{fontWeight:700,color:"#374151"}}>₩{revenue}</td>
+                  <td>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <div className="gauge" style={{width:52,height:6}}><div className="gauge-fill" style={{width:`${pc}%`,background:pc>=90?"#DC2626":"#2A9E5F"}}/></div>
+                      <span style={{fontSize:11,fontWeight:700,color:pc>=90?"#DC2626":"#1A6840"}}>{pc}%</span>
+                    </div>
+                  </td>
+                  <td><span style={{padding:"3px 8px",borderRadius:50,fontSize:10,fontWeight:700,background:pc>=90?"#FEE2E2":pc>=50?"#FEF9C3":"#EAF7F0",color:pc>=90?"#DC2626":pc>=50?"#854D0E":"#065F46"}}>{status}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsScreen(){
+  const MONTHLY=[{m:"10월",v:18.2},{m:"11월",v:21.4},{m:"12월",v:31.8},{m:"1월",v:24.1},{m:"2월",v:28.6},{m:"3월",v:7.2}];
+  const maxM=Math.max(...MONTHLY.map(m=>m.v));
+  const CATS=[{name:"신선식품",pct:52,color:"#1A6840"},{name:"달걀·잡곡",pct:24,color:"#2A9E5F"},{name:"과일",pct:14,color:"#6EE7B7"},{name:"기타",pct:10,color:"#D1FAE5"}];
+  const TOP=[
+    {rank:1,name:"제주 은갈치 특대 5마리",rsv:87,revenue:"1,609,500",growth:"+23%",up:true},
+    {rank:2,name:"국산 유기농 달걀 30구",rsv:56,revenue:"403,200",growth:"+8%",up:true},
+    {rank:3,name:"부사 사과 5kg 박스",rsv:34,revenue:"503,200",growth:"-5%",up:false},
+  ];
+  return(
+    <div>
+      <div className="dm-title">매출 분석</div>
+      <div className="dm-sub">온맘마켓 일산점 · 데이터 기반 운영 인사이트</div>
+
+      {/* 요약 KPI */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:20}}>
+        {[
+          {l:"이번 달 매출",v:"₩7.2M",s:"목표 ₩12M의 60%",c:"#1D4ED8"},
+          {l:"예약 전환율",v:"91.3%",s:"예약→픽업 완료율",c:"#1A6840"},
+          {l:"고객 1인 평균",v:"₩38,400",s:"↑ ₩3,200 vs 지난달",c:"#8B5CF6"},
+        ].map((k,i)=>(
+          <div key={i} className="kpi-c">
+            <div className="kpi-lbl">{k.l}</div>
+            <div style={{fontSize:22,fontWeight:800,color:k.c,margin:"4px 0"}}>{k.v}</div>
+            <div style={{fontSize:11,color:"#9CA3AF",fontWeight:600}}>{k.s}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 월별 매출 추이 */}
+      <div className="dt-wrap" style={{padding:"20px 22px",marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div><div style={{fontSize:14,fontWeight:700,color:"#111827"}}>📈 월별 매출 추이</div>
+          <div style={{fontSize:11,color:"#9CA3AF",marginTop:2}}>단위: 만원</div></div>
+          <div style={{display:"flex",gap:6}}>
+            {["3개월","6개월","1년"].map((p,i)=><button key={i} style={{padding:"4px 10px",borderRadius:50,fontSize:11,fontWeight:700,border:"none",cursor:"pointer",background:i===1?"#1A6840":"#F3F4F6",color:i===1?"#fff":"#6B7280",fontFamily:"inherit"}}>{p}</button>)}
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:10,height:100}}>
+          {MONTHLY.map((m,i)=>{
+            const h=Math.round((m.v/maxM)*88);
+            const isCur=i===5;
+            return(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                <div style={{fontSize:10,fontWeight:700,color:isCur?"#1A6840":"#374151"}}>{m.v}M</div>
+                <div style={{width:"100%",height:h,borderRadius:"6px 6px 0 0",background:isCur?"linear-gradient(180deg,#1A6840,#2A9E5F)":"#BBF7D0",position:"relative"}}>
+                  {isCur&&<div style={{position:"absolute",top:-20,left:"50%",transform:"translateX(-50%)",background:"#1A6840",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:50,whiteSpace:"nowrap"}}>이번달</div>}
+                </div>
+                <div style={{fontSize:10,color:isCur?"#1A6840":"#9CA3AF",fontWeight:isCur?800:500}}>{m.m}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+        {/* 카테고리 비중 */}
+        <div className="dt-wrap" style={{padding:"18px 20px"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:14}}>🥧 카테고리 매출 비중</div>
+          {CATS.map((c,i)=>(
+            <div key={i} style={{marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontSize:12,fontWeight:600,color:"#374151"}}>{c.name}</span>
+                <span style={{fontSize:12,fontWeight:800,color:c.color}}>{c.pct}%</span>
+              </div>
+              <div className="gauge" style={{height:8}}>
+                <div className="gauge-fill" style={{width:`${c.pct}%`,background:c.color}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 운영 효율 지표 */}
+        <div className="dt-wrap" style={{padding:"18px 20px"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:14}}>🎯 운영 효율 지표</div>
+          {[
+            {l:"평균 조기 마감율",v:"68%",desc:"행사 종료 전 완판",good:true},
+            {l:"평균 예약~픽업",v:"3.2일",desc:"소비자 대기 기간",good:true},
+            {l:"재구매율",v:"74%",desc:"동일 고객 재방문",good:true},
+            {l:"노쇼율",v:"1.2%",desc:"업종 평균 4.8% 대비",good:true},
+          ].map((m,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:i<3?"1px solid #F9FAFB":"none"}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:"#374151"}}>{m.l}</div>
+                <div style={{fontSize:10,color:"#9CA3AF",marginTop:1}}>{m.desc}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:800,color:m.good?"#1A6840":"#DC2626"}}>{m.v}</div>
+                <div style={{fontSize:9,color:m.good?"#2A9E5F":"#EF4444",fontWeight:700}}>{m.good?"▲ 양호":"▼ 주의"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 상품 성과 랭킹 */}
+      <div className="dt-wrap">
+        <div className="dt-hd"><div className="dt-title">🏆 상품 성과 랭킹</div><span style={{fontSize:11,color:"#9CA3AF"}}>이번 달 기준</span></div>
+        <table>
+          <thead><tr><th>순위</th><th>상품명</th><th>예약수</th><th>매출</th><th>전월 대비</th></tr></thead>
+          <tbody>
+            {TOP.map(t=>(
+              <tr key={t.rank}>
+                <td>
+                  <div style={{width:24,height:24,borderRadius:50,background:t.rank===1?"#FFD700":t.rank===2?"#C0C0C0":"#CD7F32",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800}}>{t.rank}</div>
+                </td>
+                <td style={{fontWeight:600,color:"#111827"}}>{t.name}</td>
+                <td style={{fontWeight:700,color:"#1A6840"}}>{t.rsv}건</td>
+                <td style={{fontWeight:700}}>₩{t.revenue}</td>
+                <td><span style={{fontSize:12,fontWeight:800,color:t.up?"#1A6840":"#DC2626"}}>{t.growth}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MembersScreen(){
+  const MEMBERS=[
+    {id:"M-001",name:"김지연",tier:"단골",visits:12,total:287400,last:"3/2",noshow:0,status:"활성"},
+    {id:"M-002",name:"박민준",tier:"일반",visits:4,total:89600,last:"2/28",noshow:0,status:"활성"},
+    {id:"M-003",name:"이수정",tier:"단골",visits:9,total:198000,last:"3/2",noshow:1,status:"활성"},
+    {id:"M-004",name:"최현우",tier:"신규",visits:2,total:44400,last:"2/15",noshow:0,status:"활성"},
+    {id:"M-005",name:"정다은",tier:"일반",visits:6,total:132000,last:"3/1",noshow:0,status:"활성"},
+    {id:"M-006",name:"홍성민",tier:"주의",visits:3,total:28000,last:"2/7",noshow:3,status:"정지"},
+  ];
+  const TIERS=[{lb:"전체",cnt:6},{lb:"단골",cnt:2},{lb:"일반",cnt:2},{lb:"신규",cnt:1},{lb:"주의",cnt:1}];
+  const [selTier,setSelTier]=useState("전체");
+  const filtered=selTier==="전체"?MEMBERS:MEMBERS.filter(m=>m.tier===selTier);
+  const tierColor=(t)=>t==="단골"?"#1A6840":t==="일반"?"#3B82F6":t==="신규"?"#8B5CF6":t==="주의"?"#DC2626":"#9CA3AF";
+  const tierBg=(t)=>t==="단골"?"#D1FAE5":t==="일반"?"#DBEAFE":t==="신규"?"#EDE9FE":t==="주의"?"#FEE2E2":"#F3F4F6";
+  return(
+    <div>
+      <div className="dm-title">회원 관리</div>
+      <div className="dm-sub">고객 CRM · 재방문 유도 · 노쇼 관리</div>
+
+      {/* CRM 요약 */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:20}}>
+        {[
+          {l:"전체 회원",v:"6명",s:"이번 달 신규 1명",c:"#374151"},
+          {l:"단골 고객",v:"2명",s:"재구매율 74%",c:"#1A6840"},
+          {l:"노쇼 위험군",v:"1명",s:"3회 이상",c:"#DC2626"},
+          {l:"총 누적 매출",v:"₩779K",s:"회원당 평균 ₩130K",c:"#1D4ED8"},
+        ].map((k,i)=>(
+          <div key={i} className="kpi-c">
+            <div className="kpi-lbl">{k.l}</div>
+            <div style={{fontSize:20,fontWeight:800,color:k.c,margin:"4px 0"}}>{k.v}</div>
+            <div style={{fontSize:11,color:"#9CA3AF"}}>{k.s}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 노쇼 주의 알림 */}
+      <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:12,padding:"13px 16px",marginBottom:20,display:"flex",gap:12,alignItems:"center"}}>
+        <span style={{fontSize:22,flexShrink:0}}>⚠️</span>
+        <div>
+          <div style={{fontSize:13,fontWeight:800,color:"#DC2626",marginBottom:3}}>노쇼 3회 도달 — 홍성민 고객</div>
+          <div style={{fontSize:12,color:"#6B7280"}}>현재 예약이 자동 정지된 상태입니다. 고객에게 안내 메시지를 발송해 보세요.</div>
+        </div>
+        <button style={{flexShrink:0,background:"#DC2626",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>메시지 발송</button>
+      </div>
+
+      {/* 티어 필터 */}
+      <div style={{background:"#fff",borderRadius:14,padding:"14px 18px",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.06)"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#9CA3AF",marginBottom:10}}>고객 등급 분포</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {TIERS.map(t=>(
+            <button key={t.lb} onClick={()=>setSelTier(t.lb)} style={{padding:"5px 14px",borderRadius:50,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:selTier===t.lb?"#1A6840":"#F3F4F6",color:selTier===t.lb?"#fff":"#6B7280",transition:"all .15s"}}>
+              {t.lb} <span style={{opacity:.7}}>{t.cnt}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 회원 테이블 */}
+      <div className="dt-wrap">
+        <div className="dt-hd">
+          <div className="dt-title">고객 목록</div>
+          <button style={{background:"#1A6840",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ 단골 초대</button>
+        </div>
+        <table>
+          <thead><tr><th>고객명</th><th>등급</th><th>방문</th><th>총 구매액</th><th>마지막 방문</th><th>노쇼</th><th>상태</th><th>액션</th></tr></thead>
+          <tbody>
+            {filtered.map(m=>(
+              <tr key={m.id}>
+                <td>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:28,height:28,borderRadius:50,background:tierBg(m.tier),display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>👤</div>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>{m.name}</div>
+                      <div style={{fontSize:10,color:"#9CA3AF"}}>{m.id}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span style={{padding:"3px 9px",borderRadius:50,fontSize:11,fontWeight:700,background:tierBg(m.tier),color:tierColor(m.tier)}}>{m.tier}</span></td>
+                <td style={{fontWeight:700,color:"#374151"}}>{m.visits}회</td>
+                <td style={{fontWeight:700,color:"#1A6840"}}>₩{m.total.toLocaleString()}</td>
+                <td style={{fontSize:12,color:"#9CA3AF"}}>{m.last}</td>
+                <td>
+                  <span style={{fontWeight:700,color:m.noshow>=3?"#DC2626":m.noshow>=1?"#FF9500":"#9CA3AF"}}>{m.noshow}회</span>
+                </td>
+                <td><span style={{padding:"3px 9px",borderRadius:50,fontSize:10,fontWeight:700,background:m.status==="활성"?"#D1FAE5":"#FEE2E2",color:m.status==="활성"?"#065F46":"#DC2626"}}>{m.status}</span></td>
+                <td>
+                  <button style={{padding:"4px 10px",background:"#EAF7F0",color:"#1A6840",border:"none",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>메시지</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen(){
+  const [kakao,setKakao]=useState(true);
+  const [autoRemind,setAutoRemind]=useState(true);
+  const [autoClose,setAutoClose]=useState(true);
+  const Toggle=({on,onChange})=>(
+    <button onClick={()=>onChange(!on)} style={{width:44,height:24,borderRadius:50,background:on?"#1A6840":"#D1D5DB",border:"none",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,fontFamily:"inherit"}}>
+      <div style={{position:"absolute",top:2,left:on?22:2,width:20,height:20,borderRadius:50,background:"#fff",transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+    </button>
+  );
+  return(
+    <div>
+      <div className="dm-title">설정</div>
+      <div className="dm-sub">마켓 운영 환경 및 플랫폼 연동 설정</div>
+
+      {/* 구독 플랜 */}
+      <div style={{background:"linear-gradient(135deg,#0f4d2e,#1A6840)",borderRadius:16,padding:"20px 22px",marginBottom:20,color:"#fff"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:11,color:"#A7F3D0",fontWeight:700,marginBottom:4}}>현재 구독 플랜</div>
+            <div style={{fontSize:20,fontWeight:800,marginBottom:4}}>스탠다드 플랜 ✨</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>월 ₩49,000 · 다음 결제: 4/1</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,.15)",borderRadius:10,padding:"8px 14px",textAlign:"center"}}>
+            <div style={{fontSize:18,fontWeight:900}}>D-30</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.7)"}}>갱신까지</div>
+          </div>
+        </div>
+        <div style={{marginTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
+          {["회원 관리 CRM","매출 분석","자동 리마인더","카카오 연동","무제한 상품 등록"].map((f,i)=>(
+            <span key={i} style={{background:"rgba(255,255,255,.15)",borderRadius:50,padding:"3px 10px",fontSize:10,fontWeight:600}}>✓ {f}</span>
+          ))}
+        </div>
+        <button style={{marginTop:14,background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",color:"#fff",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>프리미엄으로 업그레이드 →</button>
+      </div>
+
+      {/* 마켓 프로필 */}
+      <div className="fw" style={{marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#111827",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>🏪 마켓 프로필 <span style={{fontSize:10,fontWeight:600,color:"#9CA3AF",background:"#F3F4F6",padding:"2px 8px",borderRadius:50}}>소비자 앱에 노출</span></div>
+        <div className="frow"><label className="flabel">마켓명</label><input className="finput" defaultValue="온맘마켓 일산점"/></div>
+        <div className="frow"><label className="flabel">카테고리</label><input className="finput" defaultValue="신선식품·생활용품"/></div>
+        <div className="frow"><label className="flabel">주소</label><input className="finput" defaultValue="경기 고양시 일산동구 강촌로 27 일산시장 1층"/></div>
+        <div className="fgrid">
+          <div className="frow"><label className="flabel">운영 시작</label><input className="finput" type="time" defaultValue="12:00"/></div>
+          <div className="frow"><label className="flabel">운영 종료</label><input className="finput" type="time" defaultValue="18:00"/></div>
+        </div>
+        <div className="frow"><label className="flabel">소개글</label><textarea className="finput" rows={3} defaultValue="일산 최초 오프라인 공동구매 마켓." style={{resize:"vertical"}}/></div>
+        <button className="btn-p" style={{marginTop:4}}>저장하기</button>
+      </div>
+
+      {/* 자동화 설정 */}
+      <div className="dt-wrap" style={{marginBottom:16}}>
+        <div className="dt-hd"><div className="dt-title">🤖 자동화 설정</div></div>
+        {[
+          {label:"카카오 알림톡 연동",desc:"예약 확정·픽업 리마인더 자동 발송",on:kakao,set:setKakao},
+          {label:"픽업 전날 리마인더",desc:"픽업 D-1 오전 10시 고객 자동 알림",on:autoRemind,set:setAutoRemind},
+          {label:"수량 소진 시 자동 마감",desc:"예약 한도 도달 즉시 마감 처리",on:autoClose,set:setAutoClose},
+        ].map((s,i)=>(
+          <div key={i} style={{padding:"14px 20px",borderBottom:i<2?"1px solid #F9FAFB":"none",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>{s.label}</div>
+              <div style={{fontSize:11,color:"#9CA3AF",marginTop:2}}>{s.desc}</div>
+            </div>
+            <Toggle on={s.on} onChange={s.set}/>
+          </div>
+        ))}
+      </div>
+
+      {/* 카카오 채널 연동 */}
+      <div className="dt-wrap" style={{marginBottom:16}}>
+        <div className="dt-hd"><div className="dt-title">💬 카카오 채널 연동</div></div>
+        <div style={{padding:"16px 20px"}}>
+          <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
+            <div style={{width:44,height:44,background:"#FEE500",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>💛</div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>온맘마켓 일산점 공식채널</div>
+              <div style={{fontSize:11,color:"#9CA3AF",marginTop:2}}>구독자 342명 · 연동됨 ✓</div>
+            </div>
+            <span style={{marginLeft:"auto",background:"#D1FAE5",color:"#065F46",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:50,flexShrink:0}}>연동 완료</span>
+          </div>
+          <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 14px",fontSize:11,color:"#92400E",lineHeight:1.6}}>
+            💡 <strong>투 트랙 전략</strong>: 카카오 채널은 커뮤니티 에너지 유지, 온맘마켓 플랫폼은 예약·결제·CRM 체계 관리. 채널 구독자에게 앱 가입 유도 캠페인을 설정해 보세요.
+          </div>
+        </div>
+      </div>
+
+      {/* 계정 */}
+      <div className="dt-wrap">
+        <div className="dt-hd"><div className="dt-title">👤 계정 관리</div></div>
+        {[["사업자 정보 수정",""],["비밀번호 변경",""],["공지사항",""],["이용약관 / 개인정보처리방침",""],["로그아웃","color:#DC2626"]].map(([lb,st],i)=>(
+          <div key={i} style={{padding:"13px 20px",borderBottom:i<4?"1px solid #F9FAFB":"none",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+            <span style={{fontSize:13,fontWeight:500,color:st?"#DC2626":"#374151"}}>{lb}</span>
+            <span style={{color:"#D1D5DB",fontSize:16}}>›</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+/* ── 예약 관리 화면 (사장님) ── */
+function ResScreen(){
+  const RESERVATIONS=[
+    {id:"R-2341",name:"김지연",product:"제주 은갈치 특대 5마리",slot:"11:00~12:00",qty:1,status:"예약완료",price:18500},
+    {id:"R-2298",name:"이수정",product:"제주 은갈치 특대 5마리",slot:"11:00~12:00",qty:2,status:"예약완료",price:37000},
+    {id:"R-2301",name:"박민준",product:"국산 유기농 달걀 30구",slot:"13:00~14:00",qty:1,status:"픽업완료",price:7200},
+    {id:"R-2289",name:"최현우",product:"부사 사과 5kg 박스",slot:"14:00~15:00",qty:1,status:"예약완료",price:14800},
+    {id:"R-2276",name:"홍성민",product:"국산 유기농 달걀 30구",slot:"13:00~14:00",qty:2,status:"노쇼",price:14400},
+    {id:"R-2265",name:"정다은",product:"제주 은갈치 특대 5마리",slot:"15:00~16:00",qty:1,status:"픽업완료",price:18500},
+    {id:"R-2251",name:"강민서",product:"부사 사과 5kg 박스",slot:"14:00~15:00",qty:2,status:"픽업완료",price:29600},
+  ];
+  const [selFilter,setSelFilter]=useState("전체");
+  const [showQR,setShowQR]=useState(false);
+  const filters=["전체","예약완료","픽업완료","노쇼"];
+  const sColor=(s)=>s==="예약완료"?"#1D4ED8":s==="픽업완료"?"#059669":"#DC2626";
+  const sBg=(s)=>s==="예약완료"?"#DBEAFE":s==="픽업완료"?"#D1FAE5":"#FEE2E2";
+  const filtered=selFilter==="전체"?RESERVATIONS:RESERVATIONS.filter(r=>r.status===selFilter);
+  const cnt=(f)=>RESERVATIONS.filter(r=>r.status===f).length;
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+        <div><div className="dm-title">예약 관리</div><div className="dm-sub">2026. 3. 2 (월) · 실시간 예약 현황</div></div>
+        <button onClick={()=>setShowQR(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",background:"#1A6840",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+          📷 QR 스캔
+        </button>
+      </div>
+
+      {/* KPI */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20,marginTop:14}}>
+        {[
+          {l:"총 예약",v:RESERVATIONS.length,c:"#1D4ED8",bg:"#EFF6FF"},
+          {l:"대기 중",v:cnt("예약완료"),c:"#D97706",bg:"#FFFBEB"},
+          {l:"픽업 완료",v:cnt("픽업완료"),c:"#059669",bg:"#ECFDF5"},
+          {l:"노쇼",v:cnt("노쇼"),c:"#DC2626",bg:"#FEF2F2"},
+        ].map((k,i)=>(
+          <div key={i} style={{background:k.bg,borderRadius:12,padding:"14px 10px",textAlign:"center"}}>
+            <div style={{fontSize:22,fontWeight:900,color:k.c}}>{k.v}</div>
+            <div style={{fontSize:10,color:"#6B7280",marginTop:2}}>{k.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 필터 */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {filters.map(f=>(
+          <button key={f} onClick={()=>setSelFilter(f)}
+            style={{padding:"6px 14px",borderRadius:50,border:"1px solid",borderColor:selFilter===f?"#1A6840":"#E5E7EB",
+            background:selFilter===f?"#1A6840":"#fff",color:selFilter===f?"#fff":"#6B7280",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+            {f}{f!=="전체"?` (${cnt(f)})`:` (${RESERVATIONS.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* 목록 */}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {filtered.map(rv=>(
+          <div key={rv.id} style={{background:"#fff",border:"1px solid #F3F4F6",borderRadius:14,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:14,fontWeight:800}}>{rv.name}</span>
+                <span style={{fontSize:10,padding:"2px 8px",borderRadius:50,background:sBg(rv.status),color:sColor(rv.status),fontWeight:700}}>{rv.status}</span>
+                <span style={{fontSize:11,color:"#9CA3AF"}}>{rv.id}</span>
+              </div>
+              <div style={{fontSize:12,color:"#374151",marginBottom:3}}>{rv.product} × {rv.qty}개</div>
+              <div style={{display:"flex",gap:14,fontSize:11,color:"#9CA3AF"}}>
+                <span>⏰ {rv.slot}</span>
+                <span style={{fontWeight:700,color:"#374151"}}>₩{rv.price.toLocaleString()}</span>
+              </div>
+            </div>
+            <div style={{flexShrink:0,marginLeft:10}}>
+              {rv.status==="예약완료"&&<button style={{padding:"7px 12px",background:"#D1FAE5",color:"#065F46",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>픽업 확인</button>}
+              {rv.status==="노쇼"&&<button style={{padding:"7px 12px",background:"#FEE2E2",color:"#DC2626",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>📣 알림 발송</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* QR 스캔 모달 */}
+      {showQR&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}} onClick={()=>setShowQR(false)}>
+          <div style={{background:"#fff",borderRadius:20,padding:"30px 28px",textAlign:"center",width:320,maxWidth:"90vw"}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:48,marginBottom:12}}>📷</div>
+            <div style={{fontSize:17,fontWeight:800,marginBottom:6}}>QR 스캔으로 픽업 확인</div>
+            <div style={{fontSize:13,color:"#6B7280",lineHeight:1.6,marginBottom:20}}>고객의 QR 코드를 카메라로 스캔하면<br/>자동으로 픽업 완료 처리됩니다</div>
+            <div style={{background:"#F3F4F6",borderRadius:14,height:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:18,gap:8}}>
+              <div style={{fontSize:32}}>🎯</div>
+              <div style={{fontSize:12,color:"#9CA3AF"}}>카메라 (실제 앱에서 활성화)</div>
+            </div>
+            <button onClick={()=>setShowQR(false)} style={{width:"100%",padding:"12px",background:"#F3F4F6",border:"none",borderRadius:10,fontWeight:700,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>닫기</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 상품 등록 화면 (사장님) ── */
+function RegScreen(){
+  const EMOJIS=["🐟","🥚","🍎","🥩","🫐","🌽","🧅","🍊","🐄","🍋","🥦","🍇"];
+  const CATS=["신선식품","달걀·잡곡","과일","채소","육류","기타"];
+  const SLOTS=["10:00~11:00","11:00~12:00","12:00~13:00","13:00~14:00","14:00~15:00","15:00~16:00","16:00~17:00"];
+  const [selEmoji,setSelEmoji]=useState("🐟");
+  const [name,setName]=useState("");
+  const [cat,setCat]=useState("신선식품");
+  const [desc,setDesc]=useState("");
+  const [origPrice,setOrigPrice]=useState("");
+  const [salePrice,setSalePrice]=useState("");
+  const [totalQty,setTotalQty]=useState("");
+  const [maxPer,setMaxPer]=useState("3");
+  const [pickDate,setPickDate]=useState("2026-03-09");
+  const [selSlots,setSelSlots]=useState(["11:00~12:00","13:00~14:00"]);
+  const [submitted,setSubmitted]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const discPct=origPrice&&salePrice?Math.round((1-Number(salePrice)/Number(origPrice))*100):0;
+  const toggleSlot=(s)=>setSelSlots(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);
+  const handleSubmit=()=>{
+    if(!name||!salePrice||!totalQty){alert("상품명, 판매가, 수량은 필수입니다");return;}
+    setLoading(true);
+    setTimeout(()=>{setLoading(false);setSubmitted(true);},1600);
+  };
+  const resetForm=()=>{setName("");setDesc("");setOrigPrice("");setSalePrice("");setTotalQty("");setSelSlots(["11:00~12:00"]);setSubmitted(false);};
+  if(submitted)return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:400,gap:16,textAlign:"center"}}>
+      <div style={{fontSize:64}}>✅</div>
+      <div style={{fontSize:20,fontWeight:800,color:"#111827"}}>상품이 등록되었습니다!</div>
+      <div style={{fontSize:13,color:"#6B7280",lineHeight:1.6}}>"{name}" 상품이 온맘마켓에 등록되어<br/>고객에게 공개됩니다.</div>
+      <div style={{background:"#ECFDF5",border:"1px solid #A7F3D0",borderRadius:14,padding:"16px 24px",marginTop:8}}>
+        <div style={{fontSize:36,marginBottom:8}}>{selEmoji}</div>
+        <div style={{fontSize:14,fontWeight:800}}>{name}</div>
+        <div style={{fontSize:13,color:"#059669",fontWeight:700,marginTop:4}}>₩{Number(salePrice).toLocaleString()}</div>
+      </div>
+      <button onClick={resetForm} style={{marginTop:8,padding:"12px 28px",background:"#1A6840",color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>새 상품 등록하기</button>
+    </div>
+  );
+  return(
+    <div>
+      <div className="dm-title">상품 등록</div>
+      <div className="dm-sub">새 공구 상품을 등록하세요 · 즉시 고객에게 공개됩니다</div>
+
+      {/* 상품 이미지 이모지 */}
+      <div className="dm-card" style={{marginBottom:20}}>
+        <div className="dm-card-title">상품 이미지</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+          {EMOJIS.map(e=>(
+            <button key={e} onClick={()=>setSelEmoji(e)}
+              style={{width:44,height:44,borderRadius:10,border:"2px solid",borderColor:selEmoji===e?"#1A6840":"#E5E7EB",
+              background:selEmoji===e?"#ECFDF5":"#F9FAFB",fontSize:22,cursor:"pointer",transition:"all .15s"}}>
+              {e}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:60,height:60,background:"linear-gradient(135deg,#EAF7F0,#D1FAE5)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>{selEmoji}</div>
+          <div style={{fontSize:12,color:"#6B7280"}}>선택한 이모지가 상품 대표 이미지로 사용됩니다</div>
+        </div>
+      </div>
+
+      {/* 기본 정보 */}
+      <div className="dm-card" style={{marginBottom:20}}>
+        <div className="dm-card-title">기본 정보</div>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>상품명 <span style={{color:"#DC2626"}}>*</span></label>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="예: 제주 은갈치 특대 5마리"
+            style={{width:"100%",padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,boxSizing:"border-box",fontFamily:"inherit",outline:"none"}}/>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>카테고리</label>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {CATS.map(c=>(
+              <button key={c} onClick={()=>setCat(c)}
+                style={{padding:"6px 12px",borderRadius:50,border:"1px solid",borderColor:cat===c?"#1A6840":"#E5E7EB",
+                background:cat===c?"#1A6840":"#fff",color:cat===c?"#fff":"#6B7280",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>상품 설명</label>
+          <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="산지 직배송, 신선도 보장 등 상품 특징을 입력하세요"
+            style={{width:"100%",padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,boxSizing:"border-box",fontFamily:"inherit",resize:"none",height:76,outline:"none"}}/>
+        </div>
+      </div>
+
+      {/* 가격 설정 */}
+      <div className="dm-card" style={{marginBottom:20}}>
+        <div className="dm-card-title">가격 설정</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>정가 (원)</label>
+            <input type="number" value={origPrice} onChange={e=>setOrigPrice(e.target.value)} placeholder="25000"
+              style={{width:"100%",padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,boxSizing:"border-box",fontFamily:"inherit",outline:"none"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>판매가 (원) <span style={{color:"#DC2626"}}>*</span></label>
+            <input type="number" value={salePrice} onChange={e=>setSalePrice(e.target.value)} placeholder="18500"
+              style={{width:"100%",padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,boxSizing:"border-box",fontFamily:"inherit",outline:"none"}}/>
+          </div>
+        </div>
+        {discPct>0&&(
+          <div style={{background:"#FFF8EC",border:"1px solid #FFE5A8",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:20}}>🎉</span>
+            <span style={{fontSize:13,fontWeight:700,color:"#92400E"}}>정가 대비 <span style={{color:"#DC2626",fontSize:16}}>{discPct}% 할인</span> 설정됨</span>
+          </div>
+        )}
+      </div>
+
+      {/* 수량 설정 */}
+      <div className="dm-card" style={{marginBottom:20}}>
+        <div className="dm-card-title">수량 설정</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>총 판매 수량 <span style={{color:"#DC2626"}}>*</span></label>
+            <input type="number" value={totalQty} onChange={e=>setTotalQty(e.target.value)} placeholder="100"
+              style={{width:"100%",padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,boxSizing:"border-box",fontFamily:"inherit",outline:"none"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>1인당 최대 수량</label>
+            <input type="number" value={maxPer} onChange={e=>setMaxPer(e.target.value)} placeholder="3"
+              style={{width:"100%",padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,boxSizing:"border-box",fontFamily:"inherit",outline:"none"}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* 픽업 일정 */}
+      <div className="dm-card" style={{marginBottom:20}}>
+        <div className="dm-card-title">픽업 일정</div>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:6}}>픽업 날짜</label>
+          <input type="date" value={pickDate} onChange={e=>setPickDate(e.target.value)}
+            style={{padding:"10px 14px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+        </div>
+        <div>
+          <label style={{fontSize:12,fontWeight:700,color:"#374151",display:"block",marginBottom:8}}>픽업 시간대 <span style={{color:"#6B7280",fontWeight:500}}>(중복 선택 가능)</span></label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {SLOTS.map(s=>(
+              <button key={s} onClick={()=>toggleSlot(s)}
+                style={{padding:"7px 12px",borderRadius:8,border:"1px solid",borderColor:selSlots.includes(s)?"#1A6840":"#E5E7EB",
+                background:selSlots.includes(s)?"#ECFDF5":"#fff",color:selSlots.includes(s)?"#065F46":"#6B7280",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {selSlots.includes(s)?"✓ ":""}{s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 미리보기 */}
+      {name&&salePrice&&(
+        <div className="dm-card" style={{marginBottom:20,border:"2px solid #D1FAE5"}}>
+          <div className="dm-card-title">👀 미리보기</div>
+          <div style={{display:"flex",gap:14,alignItems:"center"}}>
+            <div style={{width:56,height:56,background:"linear-gradient(135deg,#EAF7F0,#D1FAE5)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{selEmoji}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:800,marginBottom:3}}>{name}</div>
+              <div style={{fontSize:12,color:"#6B7280",marginBottom:4}}>{cat} · 픽업 {pickDate}</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:15,fontWeight:900,color:"#FF5C38"}}>₩{Number(salePrice).toLocaleString()}</span>
+                {discPct>0&&<span style={{fontSize:11,background:"#FEE2E2",color:"#DC2626",padding:"2px 6px",borderRadius:4,fontWeight:700}}>↓{discPct}%</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 등록 버튼 */}
+      <button onClick={handleSubmit} disabled={loading}
+        style={{width:"100%",padding:"14px",background:loading?"#9CA3AF":"#1A6840",color:"#fff",border:"none",borderRadius:12,fontWeight:800,fontSize:15,cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",transition:"background .2s"}}>
+        {loading?"⏳ 등록 중...":"🚀 상품 등록하기"}
+      </button>
+      <div style={{height:20}}/>
+    </div>
+  );
+}
+
+function StoreDash(){
+  const [screen,setScreen]=useState("dash");
+  const menuGroups=[
+    {label:"운영",items:[{k:"dash",ic:"📊",lb:"대시보드"},{k:"res",ic:"📋",lb:"예약 관리"},{k:"reg",ic:"➕",lb:"상품 등록"}]},
+    {label:"분석·관리",items:[{k:"analytics",ic:"📈",lb:"매출 분석"},{k:"members",ic:"👥",lb:"회원 관리"}]},
+    {label:"설정",items:[{k:"settings",ic:"⚙️",lb:"설정"}]},
+  ];
+  const today=new Date();
+  return(
+    <div className="dash-wrap">
+      <div className="dash-side">
+        <div className="ds-logo">
+          <div className="ds-logo-name">🥬 온맘마켓</div>
+          <div className="ds-logo-sub">일산점 사장님 대시보드</div>
+        </div>
+        {menuGroups.map(g=>(
+          <div key={g.label}>
+            <div className="ds-section-lbl">{g.label.toUpperCase()}</div>
+            {g.items.map(it=>(
+              <div key={it.k} className={`ds-item${screen===it.k?" on":""}`} onClick={()=>setScreen(it.k)}>
+                <span className="ds-item-ic">{it.ic}</span>{it.lb}
+              </div>
+            ))}
+          </div>
+        ))}
+        <div className="ds-foot">
+          <div style={{fontSize:11,color:"#6EE7B7",fontWeight:700,marginBottom:6}}>스탠다드 플랜 ✨</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>예약 47건 · 대기 31건</div>
+          <div style={{marginTop:10,height:3,background:"rgba(255,255,255,.1)",borderRadius:50}}>
+            <div style={{width:"60%",height:"100%",background:"#6EE7B7",borderRadius:50}}/>
+          </div>
+          <div style={{fontSize:9,color:"#6EE7B7",marginTop:3}}>이번 달 목표 60% 달성</div>
+        </div>
+      </div>
+      <div className="dash-main">
+        {screen==="dash"&&<DashHome/>}
+        {screen==="res"&&<ResScreen/>}
+        {screen==="reg"&&<RegScreen/>}
+        {screen==="analytics"&&<AnalyticsScreen/>}
+        {screen==="members"&&<MembersScreen/>}
+        {screen==="settings"&&<SettingsScreen/>}
+      </div>
+    </div>
+  );
+}
+
+
+/* ════════════════════════════════════════════════
+   사장님 모바일 앱 — StoreApp
+   탭: 홈 / 예약 / 등록 / 알림 / MY
+   ════════════════════════════════════════════════ */
+
+const STORE_RESERVATIONS=[
+  {id:"R-2341",name:"김지연",product:"제주 은갈치 특대 5마리",slot:"11:00~12:00",qty:1,status:"예약완료",price:18500,time:"09:15"},
+  {id:"R-2298",name:"이수정",product:"제주 은갈치 특대 5마리",slot:"11:00~12:00",qty:2,status:"예약완료",price:37000,time:"09:43"},
+  {id:"R-2301",name:"박민준",product:"국산 유기농 달걀 30구",slot:"13:00~14:00",qty:1,status:"픽업완료",price:7200,time:"10:11"},
+  {id:"R-2289",name:"최현우",product:"부사 사과 5kg 박스",slot:"14:00~15:00",qty:1,status:"예약완료",price:14800,time:"10:52"},
+  {id:"R-2276",name:"홍성민",product:"국산 유기농 달걀 30구",slot:"13:00~14:00",qty:2,status:"노쇼",price:14400,time:"11:23"},
+  {id:"R-2265",name:"정다은",product:"제주 은갈치 특대 5마리",slot:"15:00~16:00",qty:1,status:"예약완료",price:18500,time:"11:47"},
+  {id:"R-2251",name:"강민서",product:"부사 사과 5kg 박스",slot:"14:00~15:00",qty:2,status:"픽업완료",price:29600,time:"12:05"},
+];
+
+const STORE_ALERTS=[
+  {id:1,type:"예약",icon:"📋",msg:"김지연님이 은갈치 1개를 예약했어요",time:"09:15",read:true},
+  {id:2,type:"예약",icon:"📋",msg:"이수정님이 은갈치 2개를 예약했어요",time:"09:43",read:true},
+  {id:3,type:"픽업",icon:"✅",msg:"박민준님이 달걀을 픽업 완료했어요",time:"10:11",read:true},
+  {id:4,type:"노쇼",icon:"⚠️",msg:"홍성민님이 노쇼 처리되었어요",time:"11:23",read:false},
+  {id:5,type:"마감",icon:"🔔",msg:"은갈치 잔여 3개 — 마감 임박!",time:"12:30",read:false},
+  {id:6,type:"예약",icon:"📋",msg:"정다은님이 은갈치 1개를 예약했어요",time:"11:47",read:false},
+  {id:7,type:"시스템",icon:"💡",msg:"오늘 목표 매출 73% 달성했어요",time:"13:00",read:false},
+];
+
+/* ─── 사장님 홈 ─── */
+function StoreHomeScreen({onTabChange}){
+  const store = useContext(SharedStoreContext);
+  const [storeState, setStoreState] = useState(store ? store.getState() : null);
+  
+  useEffect(() => {
+    if (store) {
+      return store.subscribe(setStoreState);
+    }
+  }, [store]);
+
+  const [showQR,setShowQR]=useState(false);
+  const [qrScanning,setQrScanning]=useState(false);
+  const [qrSuccess,setQrSuccess]=useState(null);
+  const [showNotice,setShowNotice]=useState(false);
+  const [noticeStep,setNoticeStep]=useState("compose"); // compose | confirm | done
+  const [noticeTarget,setNoticeTarget]=useState("전체 구독자");
+  const [noticeChannel,setNoticeChannel]=useState(["카카오 알림톡","앱 푸시"]);
+  const [noticeMsg,setNoticeMsg]=useState("");
+  const [noticeSending,setNoticeSending]=useState(false);
+  const TARGETS=["전체 구독자","오늘 예약자","은갈치 예약자","달걀 예약자"];
+  const TARGET_CNT={"전체 구독자":142,"오늘 예약자":7,"은갈치 예약자":3,"달걀 예약자":3};
+  const TEMPLATES=[
+    {lb:"입고 알림",msg:"안녕하세요! 오늘 신선한 제품이 입고됐어요 🐟 수량 한정이니 서둘러 예약하세요!"},
+    {lb:"픽업 리마인더",msg:"안녕하세요 😊 오늘 픽업 예정이신 분들, 잊지 말고 방문해주세요! 운영시간: 11:00~17:00"},
+    {lb:"임시 휴무",msg:"안녕하세요. 사정이 생겨 이번 주 금요일은 운영하지 않습니다. 불편드려 죄송해요 🙏"},
+    {lb:"마감 임박",msg:"⚡ 잔여 수량 얼마 남지 않았어요! 오늘 마감 전에 예약해두세요."},
+  ];
+  const toggleChannel=(ch)=>setNoticeChannel(p=>p.includes(ch)?p.filter(x=>x!==ch):[...ch,...p]);
+  const openNotice=()=>{setNoticeStep("compose");setNoticeMsg("");setShowNotice(true);};
+  const handleSend=()=>{
+    setNoticeSending(true);
+    setTimeout(()=>{setNoticeSending(false);setNoticeStep("done");},1600);
+  };
+  const closeNotice=()=>{setShowNotice(false);setTimeout(()=>setNoticeStep("compose"),300);};
+  
+  // SharedStore 데이터 사용 (없으면 기본 데이터)
+  const liveReservations = storeState?.liveReservations || STORE_RESERVATIONS;
+  const total=liveReservations.length;
+  const done=liveReservations.filter(r=>r.status==="픽업완료").length;
+  const waiting=liveReservations.filter(r=>r.status==="예약완료").length;
+  const noshow=liveReservations.filter(r=>r.status==="노쇼").length;
+  const revenue=liveReservations.filter(r=>r.status==="픽업완료").reduce((a,r)=>a+(r.price||r.amount||0),0);
+  
+  // QR 스캔 시뮬레이션: 대기 중인 첫 번째 예약을 픽업 완료 처리
+  const handleQRScan = () => {
+    const pendingResv = liveReservations.find(r => r.status === "예약완료");
+    if (pendingResv && store) {
+      setQrScanning(true);
+      setTimeout(() => {
+        store.completePickup(pendingResv.id);
+        setQrScanning(false);
+        setQrSuccess(pendingResv);
+        setTimeout(() => {
+          setQrSuccess(null);
+          setShowQR(false);
+        }, 2000);
+      }, 1500);
+    }
+  };
+  
+  const QUICKACTIONS=[
+    {ic:"📷",lb:"QR 스캔",color:"#1A6840",bg:"#ECFDF5",onClick:()=>setShowQR(true)},
+    {ic:"📣",lb:"공지 발송",color:"#3B82F6",bg:"#EFF6FF",onClick:openNotice},
+    {ic:"➕",lb:"상품 등록",color:"#8B5CF6",bg:"#F5F3FF",onClick:()=>onTabChange("reg")},
+    {ic:"📊",lb:"매출 보기",color:"#D97706",bg:"#FFFBEB",onClick:()=>onTabChange("alert")},
+  ];
+  const timeline=liveReservations.slice().sort((a,b)=>(b.time||"").localeCompare(a.time||"")).slice(0,4);
+  return(
+    <div style={{background:"#F9FAFB",minHeight:"100%"}}>
+      {/* 그린 헤더 */}
+      <div style={{background:"linear-gradient(145deg,#0f4d2e,#1A6840)",padding:"0 20px 24px"}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.6)"}}><span style={{fontWeight:700,color:"#fff"}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:3}}>🥬 온맘마켓 일산점</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fff",marginBottom:2}}>안녕하세요, 사장님 👋</div>
+            <div style={{fontSize:12,color:"#A7F3D0"}}>오늘 2026. 3. 2 (월) · 운영 중</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,.15)",borderRadius:14,padding:"8px 14px",textAlign:"center"}}>
+            <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>₩{(revenue/10000).toFixed(1)}만</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.7)"}}>오늘 매출</div>
+          </div>
+        </div>
+        {/* KPI 바 */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:18}}>
+          {[
+            {l:"예약",v:total,c:"#fff"},
+            {l:"대기",v:waiting,c:"#FCD34D"},
+            {l:"완료",v:done,c:"#6EE7B7"},
+            {l:"노쇼",v:noshow,c:"#FCA5A5"},
+          ].map((k,i)=>(
+            <div key={i} style={{background:"rgba(255,255,255,.12)",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:900,color:k.c}}>{k.v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.6)"}}>{k.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 빠른 액션 */}
+      <div style={{padding:"18px 16px 0"}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#111827",marginBottom:12}}>빠른 액션</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
+          {QUICKACTIONS.map((a,i)=>(
+            <button key={i} onClick={a.onClick} style={{background:a.bg,border:"none",borderRadius:14,padding:"14px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <span style={{fontSize:22}}>{a.ic}</span>
+              <span style={{fontSize:11,fontWeight:700,color:a.color,textAlign:"center",lineHeight:1.2}}>{a.lb}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 오늘의 예약 타임라인 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:13,fontWeight:800,color:"#111827"}}>최근 활동</div>
+            <button onClick={()=>onTabChange("resv")} style={{fontSize:11,color:"#1A6840",fontWeight:700,background:"none",border:"none",cursor:"pointer"}}>전체 보기 →</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column"}}>
+            {timeline.map((r,i)=>{
+              const isPickup=r.status==="픽업완료";
+              const isNoshow=r.status==="노쇼";
+              const dotColor=isPickup?"#059669":isNoshow?"#DC2626":"#1A6840";
+              const badgeBg=isPickup?"#D1FAE5":isNoshow?"#FEE2E2":"#DBEAFE";
+              const badgeColor=isPickup?"#065F46":isNoshow?"#DC2626":"#1D4ED8";
+              const isLast=i===timeline.length-1;
+              return(
+                <div key={i} style={{display:"flex",gap:12,paddingBottom:isLast?0:14,position:"relative"}}>
+                  {/* 세로 연결선 */}
+                  {!isLast&&<div style={{position:"absolute",left:7,top:16,bottom:0,width:1,background:"#F3F4F6"}}/>}
+                  {/* 상태 닷 */}
+                  <div style={{width:15,height:15,borderRadius:50,background:dotColor,flexShrink:0,marginTop:3,border:"2px solid #fff",boxShadow:`0 0 0 2px ${dotColor}30`,zIndex:1}}/>
+                  {/* 내용 */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6,marginBottom:3}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+                        <span style={{fontSize:13,fontWeight:700,color:"#111827",flexShrink:0}}>{r.name}님</span>
+                        <span style={{fontSize:10,padding:"1px 7px",borderRadius:50,background:badgeBg,color:badgeColor,fontWeight:700,flexShrink:0}}>{r.status}</span>
+                      </div>
+                      <span style={{fontSize:11,color:"#9CA3AF",flexShrink:0}}>{r.time}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#6B7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {r.product} · {r.slot}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 오늘 픽업 시간대별 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#111827",marginBottom:12}}>시간대별 예약 현황</div>
+          {[
+            {slot:"11:00~12:00",cnt:2,done:0,color:"#FCD34D"},
+            {slot:"13:00~14:00",cnt:2,done:1,color:"#6EE7B7"},
+            {slot:"14:00~15:00",cnt:2,done:1,color:"#6EE7B7"},
+            {slot:"15:00~16:00",cnt:1,done:0,color:"#93C5FD"},
+          ].map((s,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <div style={{fontSize:11,color:"#6B7280",width:88,flexShrink:0}}>{s.slot}</div>
+              <div style={{flex:1,height:8,background:"#F3F4F6",borderRadius:50,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${(s.cnt/3)*100}%`,background:s.color,borderRadius:50}}/>
+              </div>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",width:30,textAlign:"right"}}>{s.cnt}명</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* QR 스캔 모달 */}
+      {showQR&&(
+        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.7)",display:"flex",flexDirection:"column",justifyContent:"flex-end",zIndex:300}} onClick={()=>!qrScanning&&!qrSuccess&&setShowQR(false)}>
+          <div style={{background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 36px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{width:36,height:4,background:"#E5E7EB",borderRadius:50,margin:"0 auto 20px"}}/>
+            
+            {/* 스캔 성공 화면 */}
+            {qrSuccess ? (
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:56,marginBottom:12}}>🎉</div>
+                <div style={{fontSize:18,fontWeight:800,color:"#059669",marginBottom:6}}>픽업 완료!</div>
+                <div style={{fontSize:14,color:"#374151",marginBottom:4}}>{qrSuccess.user||qrSuccess.name}님</div>
+                <div style={{fontSize:13,color:"#6B7280"}}>{qrSuccess.product} × {qrSuccess.qty}개</div>
+                <div style={{fontSize:15,fontWeight:800,color:"#1A6840",marginTop:8}}>₩{(qrSuccess.amount||qrSuccess.price||0).toLocaleString()}</div>
+                <div style={{marginTop:16,background:"#D1FAE5",borderRadius:12,padding:"12px",fontSize:12,color:"#065F46",fontWeight:600}}>
+                  ✅ 소비자 앱에 픽업 완료가 반영되었습니다
+                </div>
+              </div>
+            ) : qrScanning ? (
+              /* 스캔 중 화면 */
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:40,marginBottom:12}} className="pulse">📱</div>
+                <div style={{fontSize:17,fontWeight:800,marginBottom:8}}>QR 코드 인식 중...</div>
+                <div style={{fontSize:13,color:"#6B7280"}}>잠시만 기다려주세요</div>
+                <div style={{marginTop:20,height:4,background:"#E5E7EB",borderRadius:50,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:"60%",background:"linear-gradient(90deg,#1A6840,#2A9E5F)",borderRadius:50,animation:"loading 1s ease-in-out infinite"}}/>
+                </div>
+              </div>
+            ) : (
+              /* 기본 스캔 화면 */
+              <>
+                <div style={{fontSize:17,fontWeight:800,marginBottom:4,textAlign:"center"}}>QR 스캔으로 픽업 확인</div>
+                <div style={{fontSize:13,color:"#6B7280",textAlign:"center",lineHeight:1.6,marginBottom:20}}>고객의 QR 코드를 스캔하면<br/>자동으로 픽업 완료 처리됩니다</div>
+                <div style={{background:"#0f4d2e",borderRadius:20,height:180,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:16,gap:8,position:"relative",overflow:"hidden",cursor:"pointer"}} onClick={handleQRScan}>
+                  <div style={{position:"absolute",inset:0,opacity:.1,backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 30px,rgba(255,255,255,.3) 30px,rgba(255,255,255,.3) 31px),repeating-linear-gradient(90deg,transparent,transparent 30px,rgba(255,255,255,.3) 30px,rgba(255,255,255,.3) 31px)"}}/>
+                  <div style={{fontSize:40}}>📷</div>
+                  <div style={{fontSize:13,color:"rgba(255,255,255,.8)",fontWeight:700}}>탭하여 스캔 시뮬레이션</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>대기 중인 예약을 픽업 완료 처리</div>
+                  <div style={{position:"absolute",top:"30%",left:"10%",right:"10%",height:2,background:"#6EE7B7",boxShadow:"0 0 8px #6EE7B7",borderRadius:50}}/>
+                </div>
+                {waiting > 0 ? (
+                  <div style={{background:"#EAF7F0",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#065F46",fontWeight:600,textAlign:"center"}}>
+                    📋 대기 중인 예약 {waiting}건 — 탭하면 첫 번째 예약 처리
+                  </div>
+                ) : (
+                  <div style={{background:"#F9FAFB",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#9CA3AF",fontWeight:600,textAlign:"center"}}>
+                    대기 중인 예약이 없습니다
+                  </div>
+                )}
+                <button onClick={()=>setShowQR(false)} style={{width:"100%",padding:"14px",background:"#F3F4F6",border:"none",borderRadius:12,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>닫기</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 공지 발송 바텀시트 */}
+      {showNotice&&(
+        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.55)",display:"flex",flexDirection:"column",justifyContent:"flex-end",zIndex:300}} onClick={closeNotice}>
+          <div style={{background:"#fff",borderRadius:"24px 24px 0 0",maxHeight:"88%",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{padding:"16px 20px 0",flexShrink:0}}>
+              <div style={{width:36,height:4,background:"#E5E7EB",borderRadius:50,margin:"0 auto 16px"}}/>
+              {noticeStep==="done"?(
+                <div style={{textAlign:"center",paddingBottom:12}}>
+                  <div style={{fontSize:52,marginBottom:12}}>🎉</div>
+                  <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>공지 발송 완료!</div>
+                  <div style={{fontSize:13,color:"#6B7280",lineHeight:1.6,marginBottom:8}}>
+                    <span style={{fontWeight:700,color:"#111827"}}>{TARGET_CNT[noticeTarget]}명</span>에게 발송됐어요
+                  </div>
+                  <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:20}}>
+                    {noticeChannel.map(ch=>(
+                      <span key={ch} style={{fontSize:11,padding:"3px 10px",borderRadius:50,background:"#ECFDF5",color:"#065F46",fontWeight:700}}>{ch}</span>
+                    ))}
+                  </div>
+                  <div style={{background:"#F9FAFB",borderRadius:14,padding:"14px 16px",textAlign:"left",marginBottom:20,border:"1px solid #F3F4F6"}}>
+                    <div style={{fontSize:11,color:"#9CA3AF",marginBottom:5}}>발송된 메시지</div>
+                    <div style={{fontSize:13,color:"#374151",lineHeight:1.6}}>{noticeMsg}</div>
+                  </div>
+                  <button onClick={closeNotice} style={{width:"100%",padding:"14px",background:"#1A6840",color:"#fff",border:"none",borderRadius:14,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>확인</button>
+                </div>
+              ):(
+                <>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                    <div style={{fontSize:17,fontWeight:800}}>
+                      {noticeStep==="confirm"?"발송 확인":"공지 발송"}
+                    </div>
+                    {noticeStep==="confirm"&&(
+                      <button onClick={()=>setNoticeStep("compose")} style={{fontSize:12,color:"#6B7280",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>← 수정</button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {noticeStep==="compose"&&(
+              <div style={{overflowY:"auto",padding:"0 20px 8px",flex:1}}>
+                {/* 발송 대상 */}
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>발송 대상</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {TARGETS.map(t=>(
+                      <button key={t} onClick={()=>setNoticeTarget(t)}
+                        style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderRadius:12,border:"1.5px solid",borderColor:noticeTarget===t?"#1A6840":"#E5E7EB",background:noticeTarget===t?"#ECFDF5":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{width:16,height:16,borderRadius:50,border:"2px solid",borderColor:noticeTarget===t?"#1A6840":"#D1D5DB",background:noticeTarget===t?"#1A6840":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            {noticeTarget===t&&<div style={{width:6,height:6,borderRadius:50,background:"#fff"}}/>}
+                          </div>
+                          <span style={{fontSize:13,fontWeight:600,color:"#111827"}}>{t}</span>
+                        </div>
+                        <span style={{fontSize:12,color:noticeTarget===t?"#1A6840":"#9CA3AF",fontWeight:700}}>{TARGET_CNT[t]}명</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 발송 채널 */}
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>발송 채널</div>
+                  <div style={{display:"flex",gap:8}}>
+                    {["카카오 알림톡","앱 푸시"].map(ch=>{
+                      const on=noticeChannel.includes(ch);
+                      return(
+                        <button key={ch} onClick={()=>setNoticeChannel(p=>p.includes(ch)?p.filter(x=>x!==ch):[...p,ch])}
+                          style={{flex:1,padding:"10px 8px",borderRadius:10,border:"1.5px solid",borderColor:on?"#1A6840":"#E5E7EB",background:on?"#ECFDF5":"#fff",color:on?"#065F46":"#6B7280",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          {ch==="카카오 알림톡"?"💬 카카오 알림톡":"🔔 앱 푸시"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 메시지 템플릿 */}
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>빠른 템플릿</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {TEMPLATES.map((t,i)=>(
+                      <button key={i} onClick={()=>setNoticeMsg(t.msg)}
+                        style={{padding:"5px 12px",borderRadius:50,border:"1px solid #E5E7EB",background:"#F9FAFB",fontSize:11,fontWeight:600,color:"#374151",cursor:"pointer",fontFamily:"inherit"}}>
+                        {t.lb}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 메시지 입력 */}
+                <div style={{marginBottom:16}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#374151"}}>메시지 내용</div>
+                    <div style={{fontSize:11,color:noticeMsg.length>200?"#DC2626":"#9CA3AF"}}>{noticeMsg.length}/200자</div>
+                  </div>
+                  <textarea value={noticeMsg} onChange={e=>e.target.value.length<=200&&setNoticeMsg(e.target.value)}
+                    placeholder="발송할 메시지를 입력하거나 템플릿을 선택하세요"
+                    style={{width:"100%",padding:"12px 14px",border:"1.5px solid",borderColor:noticeMsg?"#1A6840":"#E5E7EB",borderRadius:12,fontSize:13,fontFamily:"inherit",resize:"none",height:100,outline:"none",lineHeight:1.6,boxSizing:"border-box"}}/>
+                </div>
+              </div>
+            )}
+
+            {noticeStep==="confirm"&&(
+              <div style={{overflowY:"auto",padding:"0 20px 8px",flex:1}}>
+                {/* 발송 요약 */}
+                <div style={{background:"#F9FAFB",borderRadius:14,padding:"16px",marginBottom:16,border:"1px solid #F3F4F6"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #F3F4F6"}}>
+                    <span style={{fontSize:12,color:"#6B7280"}}>발송 대상</span>
+                    <span style={{fontSize:13,fontWeight:700,color:"#111827"}}>{noticeTarget} ({TARGET_CNT[noticeTarget]}명)</span>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #F3F4F6"}}>
+                    <span style={{fontSize:12,color:"#6B7280"}}>발송 채널</span>
+                    <div style={{display:"flex",gap:4}}>
+                      {noticeChannel.map(ch=>(
+                        <span key={ch} style={{fontSize:11,padding:"2px 8px",borderRadius:50,background:"#ECFDF5",color:"#065F46",fontWeight:700}}>{ch}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:12,color:"#6B7280",marginBottom:6}}>메시지 내용</div>
+                    <div style={{fontSize:13,color:"#374151",lineHeight:1.6}}>{noticeMsg}</div>
+                  </div>
+                </div>
+                <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,padding:"12px 14px",marginBottom:16,fontSize:12,color:"#92400E",lineHeight:1.5}}>
+                  ⚠️ 발송 후 취소가 불가합니다. 내용을 다시 한번 확인해주세요.
+                </div>
+              </div>
+            )}
+
+            {noticeStep!=="done"&&(
+              <div style={{padding:"8px 20px 28px",flexShrink:0,borderTop:"1px solid #F3F4F6"}}>
+                {noticeStep==="compose"?(
+                  <button onClick={()=>noticeMsg.trim()&&setNoticeStep("confirm")}
+                    style={{width:"100%",padding:"14px",background:noticeMsg.trim()?"#1A6840":"#E5E7EB",color:noticeMsg.trim()?"#fff":"#9CA3AF",border:"none",borderRadius:14,fontWeight:800,fontSize:15,cursor:noticeMsg.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>
+                    다음 — {noticeTarget} {TARGET_CNT[noticeTarget]}명에게 발송
+                  </button>
+                ):(
+                  <button onClick={handleSend} disabled={noticeSending}
+                    style={{width:"100%",padding:"14px",background:noticeSending?"#6B7280":"#1A6840",color:"#fff",border:"none",borderRadius:14,fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",transition:"background .2s"}}>
+                    {noticeSending?"📣 발송 중...":"📣 지금 바로 발송하기"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 예약 관리 (모바일) ─── */
+function StoreResvScreen(){
+  const store = useContext(SharedStoreContext);
+  const [storeState, setStoreState] = useState(store ? store.getState() : null);
+  
+  useEffect(() => {
+    if (store) {
+      return store.subscribe(setStoreState);
+    }
+  }, [store]);
+
+  const [filter,setFilter]=useState("전체");
+  const [showQR,setShowQR]=useState(false);
+  const [qrScanning,setQrScanning]=useState(false);
+  const [qrSuccess,setQrSuccess]=useState(null);
+  
+  // SharedStore 데이터 사용 (없으면 기본 데이터)
+  const reservations = storeState?.liveReservations || STORE_RESERVATIONS;
+  
+  const filters=["전체","예약완료","픽업완료","노쇼"];
+  const sColor=(s)=>s==="예약완료"?"#1D4ED8":s==="픽업완료"?"#059669":"#DC2626";
+  const sBg=(s)=>s==="예약완료"?"#DBEAFE":s==="픽업완료"?"#D1FAE5":"#FEE2E2";
+  const filtered=filter==="전체"?reservations:reservations.filter(r=>r.status===filter);
+  
+  const markPickup=(id)=>{
+    if (store) {
+      store.completePickup(id);
+    }
+  };
+  
+  const handleQRScan = () => {
+    const pendingResv = reservations.find(r => r.status === "예약완료");
+    if (pendingResv && store) {
+      setQrScanning(true);
+      setTimeout(() => {
+        store.completePickup(pendingResv.id);
+        setQrScanning(false);
+        setQrSuccess(pendingResv);
+        setTimeout(() => {
+          setQrSuccess(null);
+          setShowQR(false);
+        }, 2000);
+      }, 1500);
+    }
+  };
+  
+  const cnt=(f)=>reservations.filter(r=>r.status===f).length;
+  return(
+    <div style={{background:"#F9FAFB",minHeight:"100%"}}>
+      <div style={{background:"linear-gradient(145deg,#0f4d2e,#1A6840)",padding:"0 16px 18px"}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.6)"}}><span style={{fontWeight:700,color:"#fff"}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:17,fontWeight:800,color:"#fff"}}>예약 관리</div>
+          <button onClick={()=>setShowQR(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"rgba(255,255,255,.2)",color:"#fff",border:"none",borderRadius:20,fontSize:12,fontWeight:700}}>
+            📷 QR 스캔
+          </button>
+        </div>
+        {/* KPI */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:14}}>
+          {[{l:"대기",v:cnt("예약완료"),c:"#FCD34D"},{l:"완료",v:cnt("픽업완료"),c:"#6EE7B7"},{l:"노쇼",v:cnt("노쇼"),c:"#FCA5A5"}].map((k,i)=>(
+            <div key={i} style={{background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px",textAlign:"center"}}>
+              <div style={{fontSize:18,fontWeight:900,color:k.c}}>{k.v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.6)"}}>{k.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 필터 */}
+      <div style={{padding:"14px 16px 0",display:"flex",gap:8,overflowX:"auto"}}>
+        {filters.map(f=>(
+          <button key={f} onClick={()=>setFilter(f)}
+            style={{padding:"6px 14px",borderRadius:50,border:"1px solid",flexShrink:0,
+            borderColor:filter===f?"#1A6840":"#E5E7EB",
+            background:filter===f?"#1A6840":"#fff",
+            color:filter===f?"#fff":"#6B7280",fontSize:12,fontWeight:700}}>
+            {f}{f!=="전체"?` (${cnt(f)})`:` (${reservations.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* 목록 */}
+      <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
+        {filtered.map(rv=>(
+          <div key={rv.id} style={{background:"#fff",borderRadius:14,padding:"14px",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:34,height:34,borderRadius:50,background:sBg(rv.status),display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>
+                  {rv.status==="픽업완료"?"✅":rv.status==="노쇼"?"⚠️":"📋"}
+                </div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:800}}>{rv.name||rv.user}</div>
+                  <div style={{fontSize:11,color:"#9CA3AF"}}>{rv.id} · {rv.time}</div>
+                </div>
+              </div>
+              <span style={{fontSize:10,padding:"3px 10px",borderRadius:50,background:sBg(rv.status),color:sColor(rv.status),fontWeight:700}}>{rv.status}</span>
+            </div>
+            <div style={{background:"#F9FAFB",borderRadius:10,padding:"10px 12px",marginBottom:rv.status==="예약완료"?10:0}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:3}}>{rv.product}</div>
+              <div style={{display:"flex",gap:12,fontSize:11,color:"#9CA3AF"}}>
+                <span>×{rv.qty}개</span>
+                <span>⏰ {rv.slot}</span>
+                <span style={{color:"#111827",fontWeight:700}}>₩{(rv.price||rv.amount||0).toLocaleString()}</span>
+              </div>
+            </div>
+            {rv.status==="예약완료"&&(
+              <button onClick={()=>markPickup(rv.id)} style={{width:"100%",padding:"10px",background:"#1A6840",color:"#fff",border:"none",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                ✅ 픽업 완료 처리
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* QR 스캔 모달 */}
+      {showQR&&(
+        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.7)",display:"flex",flexDirection:"column",justifyContent:"flex-end",zIndex:300}} onClick={()=>setShowQR(false)}>
+          <div style={{background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 36px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{width:36,height:4,background:"#E5E7EB",borderRadius:50,margin:"0 auto 20px"}}/>
+            <div style={{fontSize:17,fontWeight:800,marginBottom:4,textAlign:"center"}}>QR 스캔</div>
+            <div style={{background:"#0f4d2e",borderRadius:20,height:160,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:16,gap:6,position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:"40%",left:"8%",right:"8%",height:2,background:"#6EE7B7",boxShadow:"0 0 8px #6EE7B7",borderRadius:50}}/>
+              <div style={{fontSize:36}}>📷</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>QR 코드를 프레임 안에</div>
+            </div>
+            <button onClick={()=>setShowQR(false)} style={{width:"100%",padding:"13px",background:"#F3F4F6",border:"none",borderRadius:12,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>닫기</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 상품 등록 (모바일 간소화) ─── */
+function StoreRegScreen(){
+  const EMOJIS=["🐟","🥚","🍎","🥩","🫐","🌽","🧅","🍊","🐄","🍋"];
+  const CATS=["신선식품","달걀·잡곡","과일","채소","육류","기타"];
+  const [selEmoji,setSelEmoji]=useState("🐟");
+  const [name,setName]=useState("");
+  const [cat,setCat]=useState("신선식품");
+  const [origPrice,setOrigPrice]=useState("");
+  const [salePrice,setSalePrice]=useState("");
+  const [totalQty,setTotalQty]=useState("");
+  const [pickDate,setPickDate]=useState("2026-03-09");
+  const [selSlots,setSelSlots]=useState(["11:00~12:00"]);
+  const [loading,setLoading]=useState(false);
+  const [done,setDone]=useState(false);
+  const SLOTS=["11:00~12:00","13:00~14:00","14:00~15:00","15:00~16:00"];
+  const discPct=origPrice&&salePrice?Math.round((1-Number(salePrice)/Number(origPrice))*100):0;
+  const toggleSlot=(s)=>setSelSlots(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);
+  const handleSubmit=()=>{
+    if(!name||!salePrice||!totalQty)return;
+    setLoading(true);setTimeout(()=>{setLoading(false);setDone(true);},1400);
+  };
+  if(done)return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,textAlign:"center",padding:24,background:"#fff"}}>
+      <div style={{fontSize:72}}>✅</div>
+      <div style={{fontSize:20,fontWeight:800}}>등록 완료!</div>
+      <div style={{fontSize:13,color:"#6B7280",lineHeight:1.6}}>"{name}"이 등록되어<br/>고객에게 공개됩니다.</div>
+      <div style={{background:"#ECFDF5",border:"1px solid #A7F3D0",borderRadius:16,padding:"18px 24px",width:"100%"}}>
+        <div style={{fontSize:40,marginBottom:8}}>{selEmoji}</div>
+        <div style={{fontWeight:800,fontSize:15}}>{name}</div>
+        <div style={{fontSize:13,color:"#059669",fontWeight:700,marginTop:4}}>₩{Number(salePrice).toLocaleString()} · {totalQty}개</div>
+      </div>
+      <button onClick={()=>{setName("");setSalePrice("");setOrigPrice("");setTotalQty("");setDone(false);}} style={{width:"100%",padding:"14px",background:"#1A6840",color:"#fff",border:"none",borderRadius:14,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>새 상품 등록하기</button>
+    </div>
+  );
+  return(
+    <div style={{background:"#F9FAFB",minHeight:"100%"}}>
+      <div style={{background:"linear-gradient(145deg,#0f4d2e,#1A6840)",padding:"0 16px 18px"}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.6)"}}><span style={{fontWeight:700,color:"#fff"}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{fontSize:17,fontWeight:800,color:"#fff"}}>상품 등록</div>
+      </div>
+      <div style={{padding:"16px"}}>
+        {/* 이모지 선택 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>대표 이모지</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+            {EMOJIS.map(e=>(
+              <button key={e} onClick={()=>setSelEmoji(e)}
+                style={{width:42,height:42,borderRadius:10,border:"2px solid",borderColor:selEmoji===e?"#1A6840":"#E5E7EB",background:selEmoji===e?"#ECFDF5":"#F9FAFB",fontSize:20,cursor:"pointer"}}>
+                {e}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
+            <div style={{width:48,height:48,background:"linear-gradient(135deg,#EAF7F0,#D1FAE5)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{selEmoji}</div>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="상품명을 입력하세요 *"
+              style={{flex:1,padding:"12px 14px",border:"1px solid #E5E7EB",borderRadius:12,fontSize:14,fontFamily:"inherit",outline:"none"}}/>
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {CATS.map(c=>(
+              <button key={c} onClick={()=>setCat(c)}
+                style={{padding:"5px 12px",borderRadius:50,border:"1px solid",borderColor:cat===c?"#1A6840":"#E5E7EB",background:cat===c?"#1A6840":"#fff",color:cat===c?"#fff":"#6B7280",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* 가격 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>가격 설정</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:discPct>0?10:0}}>
+            <div>
+              <div style={{fontSize:11,color:"#6B7280",marginBottom:5}}>정가</div>
+              <input type="number" value={origPrice} onChange={e=>setOrigPrice(e.target.value)} placeholder="25000"
+                style={{width:"100%",padding:"10px 12px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:"#6B7280",marginBottom:5}}>판매가 *</div>
+              <input type="number" value={salePrice} onChange={e=>setSalePrice(e.target.value)} placeholder="18500"
+                style={{width:"100%",padding:"10px 12px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+            </div>
+          </div>
+          {discPct>0&&<div style={{background:"#FFF8EC",borderRadius:10,padding:"8px 12px",fontSize:12,color:"#92400E",fontWeight:700}}>🎉 {discPct}% 할인 설정됨</div>}
+        </div>
+        {/* 수량 + 픽업 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>수량 & 픽업 일정</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+            <div>
+              <div style={{fontSize:11,color:"#6B7280",marginBottom:5}}>총 수량 *</div>
+              <input type="number" value={totalQty} onChange={e=>setTotalQty(e.target.value)} placeholder="100"
+                style={{width:"100%",padding:"10px 12px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:"#6B7280",marginBottom:5}}>픽업 날짜</div>
+              <input type="date" value={pickDate} onChange={e=>setPickDate(e.target.value)}
+                style={{width:"100%",padding:"10px 12px",border:"1px solid #E5E7EB",borderRadius:10,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+            </div>
+          </div>
+          <div style={{fontSize:11,color:"#6B7280",marginBottom:8}}>픽업 시간대</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {SLOTS.map(s=>(
+              <button key={s} onClick={()=>toggleSlot(s)}
+                style={{padding:"6px 12px",borderRadius:8,border:"1px solid",borderColor:selSlots.includes(s)?"#1A6840":"#E5E7EB",background:selSlots.includes(s)?"#ECFDF5":"#fff",color:selSlots.includes(s)?"#065F46":"#6B7280",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {selSlots.includes(s)?"✓ ":""}{s}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button onClick={handleSubmit} disabled={loading||!name||!salePrice||!totalQty}
+          style={{width:"100%",padding:"15px",background:(!name||!salePrice||!totalQty)?"#D1D5DB":loading?"#6B7280":"#1A6840",color:"#fff",border:"none",borderRadius:14,fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:24}}>
+          {loading?"⏳ 등록 중...":"🚀 상품 등록하기"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 알림 ─── */
+function StoreAlertScreen(){
+  const [alerts,setAlerts]=useState(STORE_ALERTS);
+  const unread=alerts.filter(a=>!a.read).length;
+  const markAll=()=>setAlerts(p=>p.map(a=>({...a,read:true})));
+  const typeColor=(t)=>t==="노쇼"?"#DC2626":t==="마감"?"#D97706":t==="픽업"?"#059669":t==="예약"?"#1D4ED8":"#6B7280";
+  const typeBg=(t)=>t==="노쇼"?"#FEF2F2":t==="마감"?"#FFFBEB":t==="픽업"?"#ECFDF5":t==="예약"?"#EFF6FF":"#F9FAFB";
+  return(
+    <div style={{background:"#F9FAFB",minHeight:"100%"}}>
+      <div style={{background:"linear-gradient(145deg,#0f4d2e,#1A6840)",padding:"0 16px 18px"}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.6)"}}><span style={{fontWeight:700,color:"#fff"}}>9:41</span><span>📶 🔋</span></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:17,fontWeight:800,color:"#fff"}}>알림
+            {unread>0&&<span style={{marginLeft:8,background:"#FF5C38",color:"#fff",borderRadius:50,fontSize:11,padding:"2px 8px",fontWeight:800}}>{unread}</span>}
+          </div>
+          {unread>0&&<button onClick={markAll} style={{fontSize:11,color:"rgba(255,255,255,.8)",fontWeight:700,background:"rgba(255,255,255,.15)",border:"none",borderRadius:20,padding:"5px 12px"}}>모두 읽음</button>}
+        </div>
+      </div>
+      <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
+        {alerts.map((a,i)=>(
+          <div key={i} onClick={()=>setAlerts(p=>p.map((x,j)=>j===i?{...x,read:true}:x))}
+            style={{background:a.read?"#fff":"#F0FDF4",borderRadius:14,padding:"14px",border:`1px solid ${a.read?"#F3F4F6":"#A7F3D0"}`,display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer"}}>
+            <div style={{width:38,height:38,borderRadius:12,background:typeBg(a.type),display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
+              {a.icon}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+                <span style={{fontSize:10,padding:"2px 8px",borderRadius:50,background:typeBg(a.type),color:typeColor(a.type),fontWeight:700}}>{a.type}</span>
+                <span style={{fontSize:11,color:"#9CA3AF"}}>{a.time}</span>
+              </div>
+              <div style={{fontSize:13,fontWeight:a.read?500:700,color:"#111827",lineHeight:1.4}}>{a.msg}</div>
+            </div>
+            {!a.read&&<div style={{width:8,height:8,borderRadius:50,background:"#1A6840",flexShrink:0,marginTop:4}}/>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── MY (사장님) ─── */
+function StoreMYScreen(){
+  const MENU=[
+    {ic:"📊",lb:"매출 분석",desc:"월별 트렌드 & 상품 순위",color:"#3B82F6"},
+    {ic:"👥",lb:"회원 관리",desc:"고객 CRM · 등급 · 노쇼 관리",color:"#8B5CF6"},
+    {ic:"📣",lb:"공지 발송",desc:"단톡방 · 카카오 알림톡",color:"#D97706"},
+    {ic:"⚙️",lb:"설정",desc:"마켓 프로필 · 자동화 설정",color:"#6B7280"},
+  ];
+  return(
+    <div style={{background:"#F9FAFB",minHeight:"100%"}}>
+      <div style={{background:"linear-gradient(145deg,#0f4d2e,#1A6840)",padding:"0 16px 28px"}}>
+        <div className="sbar" style={{color:"rgba(255,255,255,.6)"}}><span style={{fontWeight:700,color:"#fff"}}>9:41</span><span>📶 🔋</span></div>
+        {/* 마켓 프로필 */}
+        <div style={{display:"flex",gap:14,alignItems:"center"}}>
+          <div style={{width:56,height:56,borderRadius:18,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,border:"2px solid rgba(255,255,255,.3)"}}>🥬</div>
+          <div>
+            <div style={{fontSize:17,fontWeight:800,color:"#fff"}}>온맘마켓 일산점</div>
+            <div style={{fontSize:12,color:"#A7F3D0",marginBottom:4}}>신선식품 전문 · 일산동구</div>
+            <div style={{background:"rgba(255,255,255,.2)",borderRadius:20,padding:"3px 10px",display:"inline-flex",alignItems:"center",gap:4}}>
+              <span style={{width:6,height:6,borderRadius:50,background:"#6EE7B7",display:"inline-block"}}/>
+              <span style={{fontSize:10,color:"#fff",fontWeight:700}}>스탠다드 플랜 · ₩49,000/월</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 이번달 스냅샷 */}
+      <div style={{margin:"16px 16px 0",background:"#fff",borderRadius:16,padding:"16px",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+        <div style={{fontSize:12,fontWeight:800,color:"#374151",marginBottom:12}}>이번 달 스냅샷</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,textAlign:"center"}}>
+          {[{l:"총 매출",v:"₩7.2M"},{l:"예약 건수",v:"124건"},{l:"재방문율",v:"68%"}].map((s,i)=>(
+            <div key={i}>
+              <div style={{fontSize:17,fontWeight:900,color:"#1A6840"}}>{s.v}</div>
+              <div style={{fontSize:10,color:"#9CA3AF",marginTop:2}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 메뉴 */}
+      <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+        {MENU.map((m,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,boxShadow:"0 1px 4px rgba(0,0,0,.04)",cursor:"pointer"}}>
+            <div style={{width:42,height:42,borderRadius:12,background:`${m.color}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{m.ic}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>{m.lb}</div>
+              <div style={{fontSize:11,color:"#9CA3AF"}}>{m.desc}</div>
+            </div>
+            <span style={{color:"#D1D5DB",fontSize:16}}>›</span>
+          </div>
+        ))}
+      </div>
+
+      {/* 로그아웃 / 앱 버전 */}
+      <div style={{padding:"0 16px 32px",display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
+          <span style={{fontSize:14,color:"#374151",fontWeight:600}}>로그아웃</span>
+          <span style={{color:"#D1D5DB",fontSize:16}}>›</span>
+        </div>
+        <div style={{textAlign:"center",fontSize:11,color:"#D1D5DB",marginTop:4}}>온맘마켓 사장님 앱 v1.0.0</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── StoreApp (사장님 모바일 앱 루트) ─── */
+function StoreApp(){
+  const [tab,setTab]=useState("home");
+  const TABS=[
+    {k:"home",ic:"🏠",lb:"홈"},
+    {k:"resv",ic:"📋",lb:"예약"},
+    {k:"reg",ic:"➕",lb:"등록"},
+    {k:"alert",ic:"🔔",lb:"알림"},
+    {k:"my",ic:"🏪",lb:"MY"},
+  ];
+  const unread=STORE_ALERTS.filter(a=>!a.read).length;
+  const renderScreen=()=>{
+    if(tab==="home") return <StoreHomeScreen onTabChange={setTab}/>;
+    if(tab==="resv") return <StoreResvScreen/>;
+    if(tab==="reg")  return <StoreRegScreen/>;
+    if(tab==="alert") return <StoreAlertScreen/>;
+    if(tab==="my")   return <StoreMYScreen/>;
+  };
+  return(
+    <div className="phone-inner">
+      <div className="screen-scroll" style={{background:"#F9FAFB"}}>
+        {renderScreen()}
+      </div>
+      {/* 바텀 탭 — 사장님용 */}
+      <div className="btab">
+        {TABS.map(t=>(
+          <button key={t.k} className={`btab-item${tab===t.k?" on":""}`} onClick={()=>setTab(t.k)} style={{position:"relative"}}>
+            <div className="btab-ic">{t.ic}</div>
+            <div className="btab-lb">{t.lb}</div>
+            {t.k==="alert"&&unread>0&&(
+              <div style={{position:"absolute",top:6,right:"50%",transform:"translateX(10px)",width:16,height:16,background:"#FF5C38",borderRadius:50,fontSize:9,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800}}>{unread}</div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [mode,setMode]=useState("dual");
+  const [sharedStore] = useState(() => createSharedStore());
+  const [storeState, setStoreState] = useState(sharedStore.getState());
+  const [syncToast, setSyncToast] = useState(null);
+  
+  // 동기화 이벤트 감지 및 토스트 표시
+  useEffect(() => {
+    return sharedStore.subscribe((state) => {
+      setStoreState(state);
+      if (state.lastSync) {
+        const { type, data } = state.lastSync;
+        if (type === 'new_reservation') {
+          setSyncToast({ type: 'alert', msg: `📋 새 예약! ${data.user}님 — ${data.product}` });
+        } else if (type === 'pickup_complete') {
+          setSyncToast({ type: 'success', msg: `✅ 픽업 완료! ${data.user||data.name}님` });
+        }
+        setTimeout(() => setSyncToast(null), 3000);
+      }
+    });
+  }, [sharedStore]);
+
+  return(
+    <SharedStoreContext.Provider value={sharedStore}>
+      <div>
+        <div className="proto-hd">
+          <div className="proto-hd-title">
+            <span style={{fontSize:18}}>🥬</span>온맘마켓 — 인터랙티브 프로토타입 v4
+          </div>
+          <div className="mode-pills">
+            <button className={`mode-pill${mode==="dual"?" on":""}`} onClick={()=>setMode("dual")} style={{background:mode==="dual"?"linear-gradient(90deg,#FF5C38,#FF9500)":"transparent",border:mode==="dual"?"none":"1px solid rgba(255,255,255,.2)"}}>🔄 플로우 데모</button>
+            <button className={`mode-pill${mode==="consumer"?" on":""}`} onClick={()=>setMode("consumer")}>📱 소비자</button>
+            <button className={`mode-pill${mode==="storeApp"?" on":""}`} onClick={()=>setMode("storeApp")}>🏪 사장님</button>
+            <button className={`mode-pill${mode==="store"?" on":""}`} onClick={()=>setMode("store")}>🖥️ 대시보드</button>
+          </div>
+        </div>
+        
+        {/* 듀얼 뷰 모드 - 소비자 앱과 사장님 앱 나란히 */}
+        {mode==="dual"&&(
+          <div className="dual-wrap">
+            {/* 소비자 앱 */}
+            <div className="dual-phone-section">
+              <div className="dual-phone-label">📱 CONSUMER APP</div>
+              <div className="phone">
+                <div className="phone-notch"/>
+                <ConsumerApp/>
+              </div>
+              <div className="dual-guide">
+                <div style={{fontSize:13,fontWeight:800,color:"#1A6840",marginBottom:10}}>소비자 플로우</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[
+                    ["1","탐색 → 상품 선택","지도에서 마켓 탭 → 상품 리스트"],
+                    ["2","예약하기","수량·시간대 선택 → 예약 확정"],
+                    ["3","QR 발급","예약번호 + QR 코드 받음"],
+                  ].map(([n,t,d])=>(
+                    <div key={n} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                      <div style={{width:22,height:22,borderRadius:50,background:"#EAF7F0",color:"#1A6840",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{n}</div>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#111827"}}>{t}</div>
+                        <div style={{fontSize:11,color:"#9CA3AF"}}>{d}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* 동기화 표시 */}
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:"60px 0"}}>
+              <div style={{width:60,height:60,borderRadius:50,background:"linear-gradient(135deg,#1A6840,#2A9E5F)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 8px 24px rgba(26,104,64,.3)"}}>
+                <span style={{fontSize:24}}>⚡</span>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:13,fontWeight:800,color:"#1A6840"}}>실시간 동기화</div>
+                <div style={{fontSize:11,color:"#9CA3AF",marginTop:2}}>예약 → 알림 → 픽업</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:8,height:8,borderRadius:50,background:"#059669"}}/>
+                  <span style={{fontSize:11,color:"#6B7280"}}>예약: {storeState.liveReservations?.length || 0}건</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:8,height:8,borderRadius:50,background:"#3B82F6"}}/>
+                  <span style={{fontSize:11,color:"#6B7280"}}>대기: {storeState.liveReservations?.filter(r=>r.status==="예약완료").length || 0}건</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:8,height:8,borderRadius:50,background:"#8B5CF6"}}/>
+                  <span style={{fontSize:11,color:"#6B7280"}}>완료: {storeState.liveReservations?.filter(r=>r.status==="픽업완료").length || 0}건</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* 사장님 앱 */}
+            <div className="dual-phone-section">
+              <div className="dual-phone-label">🏪 STORE OWNER APP</div>
+              <div className="phone">
+                <div className="phone-notch"/>
+                <StoreApp/>
+              </div>
+              <div className="dual-guide">
+                <div style={{fontSize:13,fontWeight:800,color:"#FF5C38",marginBottom:10}}>사장님 플로우</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[
+                    ["1","예약 알림 수신","새 예약 → 실시간 알림"],
+                    ["2","QR 스캔","고객 방문 → 카메라 영역 탭"],
+                    ["3","픽업 완료","매출 반영 · 고객 상태 업데이트"],
+                  ].map(([n,t,d])=>(
+                    <div key={n} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                      <div style={{width:22,height:22,borderRadius:50,background:"#FFF1EE",color:"#FF5C38",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{n}</div>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#111827"}}>{t}</div>
+                        <div style={{fontSize:11,color:"#9CA3AF"}}>{d}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {mode==="consumer"&&(
+          <div className="consumer-wrap">
+            <div style={{width:375,flexShrink:0}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#9CA3AF",textAlign:"center",marginBottom:12,letterSpacing:.5}}>CONSUMER APP · v4</div>
+              <div className="phone">
+                <div className="phone-notch"/>
+                <ConsumerApp/>
+              </div>
+            </div>
+            <div className="guide-pane" style={{marginTop:34}}>
+              <div className="gp-title">📱 화면 탐색 가이드 v4</div>
+              {[
+                ["탐색 (지도)","지역 드롭다운 탭 → 다른 구/시 선택 → 새 마켓 발견 토스트 핀 탭 → 마켓 카드 선택 → 바로가기"],
+                ["피드","📣 탭 → 카테고리 필터 → FOMO 지표 확인"],
+                ["상품 예약","상품 탭 → 수량 선택 → 예약하기 → QR 발급"],
+                ["찜 / MY","❤️ 찜 탭, 👤 MY 탭"],
+              ].map(([lbl,txt],i)=>(
+                <div key={i} className="gp-row">
+                  <div className="gp-num">{i+1}</div>
+                  <div><div className="gp-lbl">{lbl}</div><div className="gp-txt">{txt}</div></div>
+                </div>
+              ))}
+              <div className="gp-note">💡 '플로우 데모' 모드에서 양쪽 앱 동기화를 확인하세요</div>
+            </div>
+          </div>
+        )}
+        {mode==="storeApp"&&(
+          <div className="consumer-wrap">
+            <div style={{width:375,flexShrink:0}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#9CA3AF",textAlign:"center",marginBottom:12,letterSpacing:.5}}>STORE OWNER APP · v2</div>
+              <div className="phone">
+                <div className="phone-notch"/>
+                <StoreApp/>
+              </div>
+            </div>
+            <div className="guide-pane" style={{marginTop:34}}>
+              <div className="gp-title">🏪 사장님 앱 가이드</div>
+              {[
+                ["🏠 홈","오늘 예약 KPI 한눈에 파악 빠른 액션 → QR 스캔 / 공지 발송 / 상품 등록"],
+                ["📋 예약 관리","실시간 예약 목록 · 상태 필터 '픽업 완료 처리' 버튼 · QR 스캔 확인"],
+                ["➕ 상품 등록","이모지 선택 → 가격 입력 → 픽업 일정 등록 즉시 소비자 앱에 노출"],
+                ["🔔 알림","예약·노쇼·마감임박 실시간 알림 읽음 처리 가능"],
+                ["🏪 MY","마켓 프로필 · 구독 플랜 확인 CRM·매출분석 바로가기"],
+              ].map(([lbl,txt],i)=>(
+                <div key={i} className="gp-row">
+                  <div className="gp-num">{i+1}</div>
+                  <div><div className="gp-lbl">{lbl}</div><div className="gp-txt">{txt}</div></div>
+                </div>
+              ))}
+              <div className="gp-note">💡 '플로우 데모' 모드에서 소비자 예약이 실시간 반영됩니다</div>
+            </div>
+          </div>
+        )}
+        {mode==="store"&&(
+          <StoreDash/>
+        )}
+        
+        {/* 동기화 토스트 알림 */}
+        {syncToast && (
+          <div className={`sync-indicator ${syncToast.type}`}>
+            <div className="sync-dot"/>
+            {syncToast.msg}
+          </div>
+        )}
+      </div>
+    </SharedStoreContext.Provider>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
